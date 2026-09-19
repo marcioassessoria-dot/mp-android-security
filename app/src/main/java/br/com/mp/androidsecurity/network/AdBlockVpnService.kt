@@ -77,7 +77,7 @@ class AdBlockVpnService:VpnService(){
   out[10]=0;out[11]=0;val ipcs=checksum(out,0,ihl);out[10]=(ipcs ushr 8).toByte();out[11]=(ipcs and 255).toByte()
   val sum=udpChecksum(out,ihl);out[ihl+6]=(sum ushr 8).toByte();out[ihl+7]=(sum and 255).toByte();return out
  }
- private fun udpChecksum(p:ByteArray,ihl:Int):Int{var s=0L;for(i in 12 until 20 step 2)s+=u16(p,i);s+=17;s+=(p.size-ihl-8);s+=checksum(p,ihl,p.size-ihl);return ((s and 0xffff)+(s ushr 16)).toInt().let{((it and 0xffff)+(it ushr 16)).let{v if(v==0)0xffff else v.inv() and 0xffff}}}
+ private fun udpChecksum(p:ByteArray,ihl:Int):Int{var s=0L;for(i in 12 until 20 step 2)s+=u16(p,i);s+=17;s+=(p.size-ihl-8);s+=checksum(p,ihl,p.size-ihl);return ((s and 0xffff)+(s ushr 16)).toInt().let{((it and 0xffff)+(it ushr 16)).let{v->if(v==0)0xffff else v.inv() and 0xffff}}}
  private fun checksum(p:ByteArray,start:Int,len:Int):Int{var s=0L;var i=start;val end=start+len;while(i+1<end){s+=u16(p,i);i+=2};if(i<end)s+=(p[i].toInt() and 255) shl 8;while(s ushr 16!=0)s=(s and 0xffff)+(s ushr 16);return s.inv() and 0xffff}
  private fun u16(p:ByteArray,i:Int)=(p[i].toInt() and 255)*256+(p[i+1].toInt() and 255)
  override fun onDestroy(){thread?.interrupt();vpn?.close();vpn=null;super.onDestroy()}
