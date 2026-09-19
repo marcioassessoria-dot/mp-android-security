@@ -17,7 +17,7 @@ fun SecurityApp(vm:SecurityViewModel){
   LazyColumn(Modifier.fillMaxSize().padding(pad).padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
    item{Text("Análise completa de aplicativos",style=MaterialTheme.typography.headlineSmall);Text("Permissões, acessibilidade, administrador, instalação e nível de risco.") }
    item{Button(onClick=vm::scan,enabled=!state.scanning,modifier=Modifier.fillMaxWidth()){Text(if(state.scanning)"ANALISANDO..." else "ANALISAR APLICATIVOS")}}
-   item{EmergencyCard(vm)}
+   item{AboutCard()}\n   item{EmergencyCard(vm)}
    item{GuidedToolsCard(vm)}
    state.error?.let{item{Text("Erro: $it",color=MaterialTheme.colorScheme.error)}}
    state.result?.let{result->
@@ -118,5 +118,28 @@ private fun EmergencyCard(vm:SecurityViewModel){
   Button(onClick={vm.open(vm.accessibilitySettings())},modifier=Modifier.fillMaxWidth()){Text("1. VERIFICAR ACESSIBILIDADE")}
   Button(onClick={vm.open(vm.deviceAdminSettings())},modifier=Modifier.fillMaxWidth()){Text("2. VERIFICAR ADMINISTRADORES")}
   Button(onClick={vm.open(vm.emergencySettings())},modifier=Modifier.fillMaxWidth()){Text("3. ABRIR CONFIGURAÇÕES")}
+ }}
+}
+
+
+@Composable
+private fun AboutCard(){
+ var expanded by remember{mutableStateOf(false)}
+ Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){
+  Text("Sobre o aplicativo",style=MaterialTheme.typography.titleLarge)
+  Text("MP Android Security",style=MaterialTheme.typography.headlineSmall)
+  Text("Versão 1.0.0")
+  Text("Desenvolvedor: Márcio Adriano Pimentel")
+  Text("Finalidade",style=MaterialTheme.typography.titleMedium)
+  Text("Ferramenta de diagnóstico e proteção guiada para Android. Analisa aplicativos instalados, permissões sensíveis, acessibilidade, administradores do dispositivo e indicadores de possível adware, oferecendo ações de revisão e remoção pelos recursos oficiais do Android.")
+  TextButton(onClick={expanded=!expanded}){Text(if(expanded)"OCULTAR INFORMAÇÕES" else "VER POLÍTICA, REPOSITÓRIO E LICENÇA")}
+  if(expanded){
+   Text("Política de privacidade",style=MaterialTheme.typography.titleMedium)
+   Text("O MP Android Security foi projetado para realizar as análises localmente no dispositivo. A versão atual não envia a lista de aplicativos, permissões ou resultados de análise para um servidor. A ferramenta deve ser usada apenas pelo proprietário ou por técnico autorizado do aparelho.")
+   Text("Repositório",style=MaterialTheme.typography.titleMedium)
+   Text("github.com/marcioassessoria-dot/mp-android-security")
+   Text("Licença",style=MaterialTheme.typography.titleMedium)
+   Text("Licença do projeto: a definir. Os direitos sobre o código permanecem com o desenvolvedor até que uma licença de código aberto seja escolhida e adicionada ao repositório.")
+  }
  }}
 }
