@@ -50,7 +50,7 @@ private fun AppCard(vm:SecurityViewModel,app:InstalledAppInfo){
   Text("Risco ${app.riskScore}/100 • ${app.riskLevel.label}")
   Text(app.packageName,style=MaterialTheme.typography.bodySmall)
   if(app.adwareLevel!=AdwareLevel.NONE)Text("🟠 ${app.adwareLevel.label}: ${app.adwareScore}/100")
-  Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Text(if(app.isSystemApp)"Sistema" else "Instalado pelo usuário");Text(if(app.enabled)"Ativo" else "Desativado")}
+  Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Text(app.origin.label);Text(if(app.enabled)"Ativo" else "Desativado")}
   if(app.riskReasons.isNotEmpty()){Text("Indicadores:");app.riskReasons.take(if(expanded)10 else 3).forEach{Text("• $it",style=MaterialTheme.typography.bodySmall)}}
   TextButton(onClick={expanded=!expanded}){Text(if(expanded)"OCULTAR DETALHES" else "VER DETALHES")}
   if(expanded){
