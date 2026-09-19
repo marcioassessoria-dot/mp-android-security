@@ -3,6 +3,7 @@ import android.app.admin.DevicePolicyManager
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
+import android.os.Build
 import android.provider.Settings
 import br.com.mp.androidsecurity.model.*
 import kotlin.system.measureTimeMillis
