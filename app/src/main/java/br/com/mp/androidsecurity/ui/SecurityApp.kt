@@ -17,6 +17,8 @@ fun SecurityApp(vm:SecurityViewModel){
   LazyColumn(Modifier.fillMaxSize().padding(pad).padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
    item{Text("Análise completa de aplicativos",style=MaterialTheme.typography.headlineSmall);Text("Permissões, acessibilidade, administrador, instalação e nível de risco.") }
    item{Button(onClick=vm::scan,enabled=!state.scanning,modifier=Modifier.fillMaxWidth()){Text(if(state.scanning)"ANALISANDO..." else "ANALISAR APLICATIVOS")}}
+   item{EmergencyCard(vm)}
+   item{GuidedToolsCard(vm)}
    state.error?.let{item{Text("Erro: $it",color=MaterialTheme.colorScheme.error)}}
    state.result?.let{result->
     item{
@@ -58,7 +60,7 @@ private fun AppCard(app:InstalledAppInfo){
    Text("Instalador: ${app.installer ?: "desconhecido"}")
    if(app.accessibilityEnabled)Text("⚠ Acessibilidade ativa")
    if(app.deviceAdminActive)Text("⚠ Administrador do dispositivo ativo")
-   if(app.adwareIndicators.isNotEmpty()){
+   ActionButtons(vm,app)\n   if(app.adwareIndicators.isNotEmpty()){
     Text("Indicadores de possível adware",style=MaterialTheme.typography.titleSmall)
     app.adwareIndicators.forEach{Text("• ${it.title} (+${it.points}) — ${it.detail}",style=MaterialTheme.typography.bodySmall)}
    }
@@ -82,5 +84,39 @@ private fun ThreatIntelCard(){
    Text("Foco do scanner: "+t.detectionFocus,style=MaterialTheme.typography.bodySmall)
   }
   TextButton(onClick={expanded=!expanded}){Text(if(expanded)"OCULTAR AMEAÇAS" else "VER AMEAÇAS E MÉTODOS")}
+ }}
+}
+@Composable
+private fun ActionButtons(vm:SecurityViewModel,app:InstalledAppInfo){
+ Column(verticalArrangement=Arrangement.spacedBy(6.dp)){
+  Text("Ferramentas de segurança",style=MaterialTheme.typography.titleSmall)
+  Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
+   if(!app.isSystemApp)Button(onClick={vm.open(vm.uninstall(app.packageName))},modifier=Modifier.weight(1f)){Text("DESINSTALAR")}
+   Button(onClick={vm.open(vm.appDetails(app.packageName)),modifier=Modifier.weight(1f)}>{Text("REVISAR APP")}
+  }
+  Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
+   Button(onClick={vm.open(vm.notificationSettings(app.packageName)),modifier=Modifier.weight(1f)}>{Text("NOTIFICAÇÕES")}
+   Button(onClick={vm.open(vm.permissions(app.packageName)),modifier=Modifier.weight(1f)}>{Text("CONFIGURAÇÕES")}
+  }
+  Text("O Android confirma ações sensíveis. O MP Android Security não remove ou bloqueia outro app silenciosamente.",style=MaterialTheme.typography.bodySmall)
+ }
+}
+@Composable
+private fun GuidedToolsCard(vm:SecurityViewModel){
+ Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
+  Text("Ferramentas guiadas",style=MaterialTheme.typography.titleLarge)
+  Text("Acesse as telas oficiais do Android para revisar permissões, acessibilidade e administradores.")
+  Button(onClick={vm.open(vm.accessibilitySettings())},modifier=Modifier.fillMaxWidth()){Text("REVISAR ACESSIBILIDADE")}
+  Button(onClick={vm.open(vm.deviceAdminSettings())},modifier=Modifier.fillMaxWidth()){Text("REVISAR ADMINISTRADORES")}
+ }}
+}
+@Composable
+private fun EmergencyCard(vm:SecurityViewModel){
+ Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
+  Text("🚨 MODO DE EMERGÊNCIA",style=MaterialTheme.typography.titleLarge)
+  Text("Use quando o aparelho estiver abrindo propaganda, exibindo telas sobre outros apps ou apresentando comportamento anormal.")
+  Button(onClick={vm.open(vm.accessibilitySettings())},modifier=Modifier.fillMaxWidth()){Text("1. VERIFICAR ACESSIBILIDADE")}
+  Button(onClick={vm.open(vm.deviceAdminSettings())},modifier=Modifier.fillMaxWidth()){Text("2. VERIFICAR ADMINISTRADORES")}
+  Button(onClick={vm.open(vm.emergencySettings())},modifier=Modifier.fillMaxWidth()){Text("3. ABRIR CONFIGURAÇÕES")}
  }}
 }
