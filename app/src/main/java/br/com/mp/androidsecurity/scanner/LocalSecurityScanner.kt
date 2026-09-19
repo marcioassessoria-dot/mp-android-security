@@ -7,11 +7,11 @@ import android.provider.Settings
 import br.com.mp.androidsecurity.model.*
 import kotlin.system.measureTimeMillis
 class LocalSecurityScanner(private val c:Context){
- private val apps=InstalledAppsScanner(c); private val acc=AccessibilityScanner(c); private val admins=DeviceAdminScanner(c)
+ private val apps=InstalledAppsScanner(c); private val browser=BrowserScanner(c); private val acc=AccessibilityScanner(c); private val admins=DeviceAdminScanner(c)
  fun scan():ScanResult{
-  lateinit var a:List<AccessibilityFinding>; lateinit var d:List<DeviceAdminFinding>; lateinit var p:List<InstalledAppInfo>; lateinit var mon:MonitoringStatus
-  val ms=measureTimeMillis{a=acc.scan();d=admins.scan();p=apps.scan(a.map{it.packageName}.toSet(),d.map{it.packageName}.toSet());mon=monitoring(a,d,p)}
-  return ScanResult(p,a,d,mon,ms)
+  lateinit var a:List<AccessibilityFinding>; lateinit var d:List<DeviceAdminFinding>; lateinit var p:List<InstalledAppInfo>; lateinit var b:List<InstalledAppInfo>; lateinit var mon:MonitoringStatus
+  val ms=measureTimeMillis{a=acc.scan();d=admins.scan();p=apps.scan(a.map{it.packageName}.toSet(),d.map{it.packageName}.toSet());val bp=browser.scan();b=p.filter{it.packageName in bp};mon=monitoring(a,d,p)}
+  return ScanResult(p,b,a,d,mon,ms)
  }
  private fun monitoring(a:List<AccessibilityFinding>,d:List<DeviceAdminFinding>,apps:List<InstalledAppInfo>):MonitoringStatus{
   val f=mutableListOf<MonitoringFinding>()
