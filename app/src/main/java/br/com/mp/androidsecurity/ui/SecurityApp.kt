@@ -16,7 +16,7 @@ fun SecurityApp(vm:SecurityViewModel){
  Scaffold(topBar={TopAppBar(title={Text("MP Android Security")})}){pad->
   LazyColumn(Modifier.fillMaxSize().padding(pad).padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
    item{Text("Análise completa de aplicativos",style=MaterialTheme.typography.headlineSmall);Text("Permissões, acessibilidade, administrador, instalação e nível de risco.") }
-   item{Button(onClick=vm::scan,enabled=!state.scanning,modifier=Modifier.fillMaxWidth()){Text(if(state.scanning)"ANALISANDO..." else "ANALISAR APLICATIVOS")}}
+   item{Button(onClick=vm::scan,enabled=!state.scanning,modifier=Modifier.fillMaxWidth()){Text(if(state.scanning)"ANALISANDO..." else "ANALISAR APLICATIVOS")}}\n   state.result?.let{r->item{Card{Row(Modifier.fillMaxWidth().padding(14.dp),horizontalArrangement=Arrangement.SpaceEvenly){Column{Text("Risco > 80",style=MaterialTheme.typography.titleSmall);Text(r.apps.count{it.riskScore>=80}.toString(),style=MaterialTheme.typography.headlineSmall)};Column{Text("Navegadores analisados",style=MaterialTheme.typography.titleSmall);Text(r.browsers.size.toString(),style=MaterialTheme.typography.headlineSmall)}}}}}
    item{AboutCard()}
    item{EmergencyCard(vm)}
    item{GuidedToolsCard(vm)}
