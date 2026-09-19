@@ -17,6 +17,8 @@ object RiskEngine{
  }.distinct()
  fun level(s:Int)=when{ s>=50->RiskLevel.HIGH;s>=30->RiskLevel.SUSPICIOUS;s>=15->RiskLevel.ATTENTION;else->RiskLevel.LOW}
  fun score(req:List<String>,granted:Set<String>,access:Boolean,admin:Boolean)=(req.filter{it in granted}.sumOf(::points)+(if(access)10 else 0)+(if(admin)10 else 0)).coerceAtMost(100)
+ fun threatScore(matches:List<ThreatMatch>):Int=when{matches.any{it.confidence>=100}->50;matches.any{it.confidence>=95}->45;matches.any{it.confidence>=85}->35;else->0}
+ fun threatReasons(matches:List<ThreatMatch>):List<String>=matches.flatMap{listOf("Threat Intelligence: "+it.threatName+" — "+it.matchedOn.joinToString(", "))}.distinct()
  fun adwareIndicators(req:List<String>,granted:Set<String>,access:Boolean,installer:String?,firstInstallTime:Long,isSystemApp:Boolean):List<AdwareIndicator>{
   val out=mutableListOf<AdwareIndicator>()
   if(Manifest.permission.SYSTEM_ALERT_WINDOW in granted) out+=AdwareIndicator("Sobreposição de tela","Pode exibir conteúdo por cima de outros aplicativos; combinado com outros sinais, é um indicador de propaganda intrusiva ou fraude.",20)
