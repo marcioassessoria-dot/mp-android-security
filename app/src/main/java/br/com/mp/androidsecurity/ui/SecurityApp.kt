@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import br.com.mp.androidsecurity.network.NetworkBlockStore
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import br.com.mp.androidsecurity.model.*
@@ -13,6 +16,8 @@ import br.com.mp.androidsecurity.model.*
 @Composable
 fun SecurityApp(vm:SecurityViewModel){
  val state by vm.state.collectAsState()
+ val networkEvents by NetworkBlockStore.events.collectAsState()
+ val vpnLauncher=rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()){if(it.resultCode==android.app.Activity.RESULT_OK)vm.startAdBlock()}
  Scaffold(topBar={TopAppBar(title={Text("MP Android Security")})}){pad->
   LazyColumn(Modifier.fillMaxSize().padding(pad).padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
    item{Text("Análise completa de aplicativos",style=MaterialTheme.typography.headlineSmall);Text("Permissões, acessibilidade, administrador, instalação e nível de risco.") }
@@ -38,6 +43,7 @@ fun SecurityApp(vm:SecurityViewModel){
     item{HighRiskHeader(highRisk.size)}
     items(highRisk,key={it.packageName}){app->AppCard(vm,app)}
     item{PrivateDnsCard(vm,result.privateDns)}
+    item{NetworkProtectionCard(vm,vpnLauncher,networkEvents)}
     item{BrowserCard(result.browsers)}
     item{MonitoringCard(result.monitoring)}
     item{ThreatIntelCard()}
@@ -89,6 +95,28 @@ private fun PrivateDnsCard(vm:SecurityViewModel,status:PrivateDnsStatus){
   Text(status.detail,style=MaterialTheme.typography.bodySmall)
   Text("O DNS ajuda a bloquear domínios de anúncios, rastreadores e algumas ameaças conhecidas, mas não remove aplicativos maliciosos.",style=MaterialTheme.typography.bodySmall)
   Button(onClick={vm.open(vm.privateDnsSettings())},modifier=Modifier.fillMaxWidth()){Text("ABRIR CONFIGURAÇÕES DE REDE")}
+ }
+ }
+}
+@Composable
+private fun NetworkProtectionCard(vm:SecurityViewModel,launcher:androidx.activity.result.ActivityResultLauncher<android.content.Intent>,events:List<br.com.mp.androidsecurity.model.NetworkBlockEvent>){
+ Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
+  Text("Bloqueador de anúncios e rastreadores",style=MaterialTheme.typography.titleLarge)
+  Text("A proteção usa uma VPN local para interceptar consultas DNS. Quando o Android fornece o UID da conexão, o evento é atribuído ao aplicativo que originou a consulta.")
+  Text("Bloqueios registrados: "+events.size)
+  Row(horizontalArrangement=Arrangement.spacedBy(7.dp)){
+   Button(onClick={val i=vm.vpnPrepare();if(i==null)vm.startAdBlock() else launcher.launch(i)},modifier=Modifier.weight(1f)){Text("ATIVAR")}
+   OutlinedButton(onClick=vm::stopAdBlock,modifier=Modifier.weight(1f)){Text("DESATIVAR")}
+  }
+  if(events.isNotEmpty()){
+   Text("Últimos bloqueios",style=MaterialTheme.typography.titleMedium)
+   events.takeLast(10).asReversed().forEach{e->
+    Text("• "+(e.appName ?: "Aplicativo não identificado")+" — "+e.domain,style=MaterialTheme.typography.bodySmall)
+    Text("  "+(e.packageName ?: "UID "+e.uid)+" • "+e.reason,style=MaterialTheme.typography.bodySmall)
+   }
+   TextButton(onClick=vm::clearNetworkEvents){Text("LIMPAR HISTÓRICO")}
+  }
+  Text("Limitação: a atribuição depende das informações que o Android fornece à VPN. Consultas feitas por DoH/DoT, outras VPNs ou mecanismos fora do DNS interceptado podem não aparecer.",style=MaterialTheme.typography.bodySmall)
  }
  }
 }
