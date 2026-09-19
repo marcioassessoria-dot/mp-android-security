@@ -1,0 +1,4 @@
+package br.com.mp.androidsecurity.scanner
+import android.Manifest
+import br.com.mp.androidsecurity.model.RiskLevel
+object RiskEngine{private val p=mapOf(Manifest.permission.CAMERA to 5,Manifest.permission.RECORD_AUDIO to 8,Manifest.permission.ACCESS_FINE_LOCATION to 5,Manifest.permission.READ_CONTACTS to 6,Manifest.permission.READ_SMS to 10,Manifest.permission.SEND_SMS to 10,Manifest.permission.READ_CALL_LOG to 8,Manifest.permission.CALL_PHONE to 8,Manifest.permission.SYSTEM_ALERT_WINDOW to 10,Manifest.permission.REQUEST_INSTALL_PACKAGES to 8);fun points(x:String)=p[x]?:0;fun level(s:Int)=when{ s>=50->RiskLevel.HIGH;s>=30->RiskLevel.SUSPICIOUS;s>=15->RiskLevel.ATTENTION;else->RiskLevel.LOW};fun score(req:List<String>,granted:Set<String>,access:Boolean,admin:Boolean)=(req.filter{it in granted}.sumOf(::points)+(if(access)10 else 0)+(if(admin)10 else 0)).coerceAtMost(100)}
