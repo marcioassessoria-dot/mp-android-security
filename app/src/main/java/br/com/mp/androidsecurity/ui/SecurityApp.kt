@@ -139,7 +139,8 @@ private fun AboutCard(){
    Text("Repositório",style=MaterialTheme.typography.titleMedium)
    Text("github.com/marcioassessoria-dot/mp-android-security")
    Text("Licença",style=MaterialTheme.typography.titleMedium)
-   Text("Licença do projeto: a definir. Os direitos sobre o código permanecem com o desenvolvedor até que uma licença de código aberto seja escolhida e adicionada ao repositório.")
+   Text("Licença: MIT License")
+   Text("O código deste projeto é disponibilizado sob a licença MIT. Consulte o arquivo LICENSE no repositório para o texto integral da licença.")
   }
  }}
 }
