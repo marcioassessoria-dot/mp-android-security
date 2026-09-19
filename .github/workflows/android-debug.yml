@@ -5,7 +5,7 @@ on:
     branches: ["main", "master"]
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -28,10 +28,7 @@ jobs:
 
       - name: Install Android SDK packages
         run: |
-          sdkmanager --install \
-            "platform-tools" \
-            "platforms;android-35" \
-            "build-tools;35.0.0"
+          sdkmanager --install             "platform-tools"             "platforms;android-35"             "build-tools;35.0.0"
 
       - name: Set up Gradle 8.10.2
         uses: gradle/actions/setup-gradle@v4
@@ -50,3 +47,11 @@ jobs:
           name: mp-android-security-debug
           path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
+
+      - name: Publish GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          TAG="v1.0.0"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG"             --title "MP Android Security v1.0.0"             --notes "Primeira versão pública do MP Android Security. APK de diagnóstico e proteção guiada para Android."
+          gh release upload "$TAG" app/build/outputs/apk/debug/app-debug.apk --clobber
