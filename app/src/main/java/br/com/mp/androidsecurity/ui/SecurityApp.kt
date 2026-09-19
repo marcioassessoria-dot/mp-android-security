@@ -33,7 +33,7 @@ fun SecurityApp(vm:SecurityViewModel){
       Text("Tempo: ${result.durationMs} ms")
      }}
     }
-    items(result.apps,key={it.packageName}){app->AppCard(app)}
+    items(result.apps,key={it.packageName}){app->AppCard(vm,app)}
     item{MonitoringCard(result.monitoring)}
     item{ThreatIntelCard()}
    }
@@ -42,7 +42,7 @@ fun SecurityApp(vm:SecurityViewModel){
 }
 
 @Composable
-private fun AppCard(app:InstalledAppInfo){
+private fun AppCard(vm:SecurityViewModel,app:InstalledAppInfo){
  var expanded by remember(app.packageName){mutableStateOf(false)}
  Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){
   Text(app.appName,style=MaterialTheme.typography.titleMedium)
