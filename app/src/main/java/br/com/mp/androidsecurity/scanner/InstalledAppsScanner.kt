@@ -4,6 +4,7 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import br.com.mp.androidsecurity.model.*
+import java.security.MessageDigest
 
 class InstalledAppsScanner(private val c:Context){
  private val pm=c.packageManager
