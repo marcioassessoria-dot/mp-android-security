@@ -6,7 +6,7 @@ import android.os.Build
 import br.com.mp.androidsecurity.model.*
 class InstalledAppsScanner(private val c:Context){
  private val pm=c.packageManager
- fun scan(acc:Set<String>,admins:Set<String>): List<InstalledAppInfo> =pm.getInstalledPackages(PackageManager.GET_PERMISSIONS).mapNotNull{pkg->
+ fun scan(acc:Set<String>,admins:Set<String>,threats:List<ThreatIntel> = emptyList()): List<InstalledAppInfo> =pm.getInstalledPackages(PackageManager.GET_PERMISSIONS).mapNotNull{pkg->
   val ai=pkg.applicationInfo?:return@mapNotNull null
   val allRequested=pkg.requestedPermissions.orEmpty().toList()
   val requested=allRequested.filter(RiskEngine::isSensitive)
@@ -26,7 +26,9 @@ class InstalledAppsScanner(private val c:Context){
   val adScore=if(isSystem) 0 else RiskEngine.adwareScore(adIndicators,granted,accessibility)
   val adLevel=RiskEngine.adwareLevel(adScore,adIndicators)
   val versionCode=if(Build.VERSION.SDK_INT>=28)pkg.longVersionCode else @Suppress("DEPRECATION") pkg.versionCode.toLong()
+  val cert=runCatching{SigningDigest.sha256(pkg)}.getOrNull()
+  val apkHash=runCatching{MessageDigest.getInstance("SHA-256").digest(java.io.File(ai.sourceDir).readBytes()).joinToString(""){"%02x".format(it)}}.getOrNull()
   val reasons=if(isSystem) buildList { if(accessibility) add("Serviço de acessibilidade ativo") ; if(admin) add("Administrador do dispositivo ativo") } else (RiskEngine.reasons(requested,granted,accessibility,admin)+when(adLevel){AdwareLevel.HIGH->listOf("Possível adware: combinação de múltiplos indicadores");AdwareLevel.POSSIBLE->listOf("Indícios de possível adware: investigar os indicadores");else->emptyList()}).distinct()
-  InstalledAppInfo(pkg.packageName,ai.loadLabel(pm).toString(),pkg.versionName,versionCode,ai.targetSdkVersion,isSystem,origin,ai.enabled,installer,pkg.firstInstallTime,pkg.lastUpdateTime,findings,accessibility,admin,reasons,score,RiskEngine.level(score),adIndicators,adScore,adLevel)
+  InstalledAppInfo(pkg.packageName,ai.loadLabel(pm).toString(),pkg.versionName,versionCode,ai.targetSdkVersion,isSystem,origin,ai.enabled,installer,pkg.firstInstallTime,pkg.lastUpdateTime,findings,accessibility,admin,cert,apkHash,reasons,score,RiskEngine.level(score),adIndicators,adScore,adLevel).let{base-> val matches=ThreatCorrelationEngine.correlate(base,threats); val ts=RiskEngine.threatScore(matches); base.copy(threatMatches=matches,riskReasons=(base.riskReasons+RiskEngine.threatReasons(matches)).distinct(),riskScore=(base.riskScore+ts).coerceAtMost(100),riskLevel=RiskEngine.level((base.riskScore+ts).coerceAtMost(100)))}
  }.sortedByDescending{it.riskScore}
 }
