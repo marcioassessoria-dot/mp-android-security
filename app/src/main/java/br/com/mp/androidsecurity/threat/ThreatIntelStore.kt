@@ -30,6 +30,9 @@ class ThreatIntelStore(context: Context) : SQLiteOpenHelper(context.applicationC
                 put(JSONObject().apply {
                     put("name", t.name); put("category", t.category); put("vectors", t.vectors)
                     put("behaviors", t.behaviors); put("detectionFocus", t.detectionFocus); put("updated", t.updated)
+                    put("package_names", JSONArray(t.packageNames))
+                    put("certificate_sha256", JSONArray(t.certificateSha256))
+                    put("apk_sha256", JSONArray(t.apkSha256))
                 })
             }
         }.toString()
@@ -39,9 +42,11 @@ class ThreatIntelStore(context: Context) : SQLiteOpenHelper(context.applicationC
         writableDatabase.execSQL("DELETE FROM snapshots WHERE version NOT IN (SELECT version FROM snapshots ORDER BY version DESC LIMIT 3)")
     }
 
+    private fun jsonList(a: JSONArray?): List<String> = a?.let { (0 until it.length()).mapNotNull { i -> it.optString(i).takeIf { s -> s.isNotBlank() } } } ?: emptyList()
+
     private fun parseThreats(array: JSONArray): List<ThreatIntel> = (0 until array.length()).map { i ->
         val o = array.getJSONObject(i)
         ThreatIntel(o.getString("name"), o.getString("category"), o.getString("vectors"),
-            o.optString("behaviors"), o.optString("detectionFocus"), o.optString("updated"))
+            o.optString("behaviors"), o.optString("detectionFocus"), o.optString("updated"), jsonList(o.optJSONArray("package_names")), jsonList(o.optJSONArray("certificate_sha256")), jsonList(o.optJSONArray("apk_sha256")) )
     }
 }
