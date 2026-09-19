@@ -48,7 +48,8 @@ class ThreatIntelRepository(private val context: Context, private val endpoint: 
                 (0 until array.length()).map { i ->
                     val o = array.getJSONObject(i)
                     ThreatIntel(o.getString("name"), o.getString("category"), o.getString("vectors"),
-                        o.optString("behaviors"), o.optString("detectionFocus"), o.optString("updated"))
+                        o.optString("behaviors"), o.optString("detectionFocus"), o.optString("updated"),
+                        jsonList(o.optJSONArray("package_names")), jsonList(o.optJSONArray("certificate_sha256")), jsonList(o.optJSONArray("apk_sha256")))
                 }
             }
             require(threats.isNotEmpty()) { "Feed vazio rejeitado." }
@@ -61,6 +62,8 @@ class ThreatIntelRepository(private val context: Context, private val endpoint: 
             connection.disconnect()
         }
     }
+
+    private fun jsonList(a: org.json.JSONArray?): List<String> = a?.let { (0 until it.length()).mapNotNull { i -> it.optString(i).takeIf { s -> s.isNotBlank() } } } ?: emptyList()
 
     companion object {
         const val DEFAULT_ENDPOINT = "https://raw.githubusercontent.com/marcioassessoria-dot/mp-android-security/main/threat-intel/feed.json"
