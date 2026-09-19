@@ -134,7 +134,10 @@ private fun AdwareRemovalAssistant(vm:SecurityViewModel,result:ScanResult?){
    if(app.accessibilityEnabled) Button(onClick={vm.open(vm.accessibilitySettings())},modifier=Modifier.fillMaxWidth()){Text("3. DESATIVAR ACESSIBILIDADE")}
    if(app.deviceAdminActive) Button(onClick={vm.open(vm.deviceAdminSettings())},modifier=Modifier.fillMaxWidth()){Text("3. DESATIVAR ADMINISTRADOR")}
    if(!app.isSystemApp) Button(onClick={vm.open(vm.uninstall(app.packageName))},modifier=Modifier.fillMaxWidth()){Text("4. ABRIR DESINSTALAÇÃO")}
-   Button(onClick=vm::scan,modifier=Modifier.fillMaxWidth()){Text("5. FAZER NOVA VARREDURA DE CONFIRMAÇÃO")}
+   Button(onClick={vm.open(vm.safeModeSettings())},modifier=Modifier.fillMaxWidth()){Text("5. ORIENTAR MODO DE SEGURANÇA")}
+   Text("Em Modo de Segurança, o Android inicia sem a maioria dos aplicativos de terceiros. Depois de reiniciar nesse modo, tente novamente a desinstalação.",style=MaterialTheme.typography.bodySmall)
+   if(!app.isSystemApp) Button(onClick={vm.open(vm.uninstall(app.packageName))},modifier=Modifier.fillMaxWidth()){Text("6. REPETIR DESINSTALAÇÃO")}
+   Button(onClick=vm::scan,modifier=Modifier.fillMaxWidth()){Text("7. FAZER NOVA VARREDURA DE CONFIRMAÇÃO")}
    HorizontalDivider()
   }
  }}
