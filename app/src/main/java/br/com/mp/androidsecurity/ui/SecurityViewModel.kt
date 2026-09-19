@@ -22,7 +22,7 @@ class SecurityViewModel(a:Application):AndroidViewModel(a){
  fun intent(action:String,uri:Uri?=null):Intent=Intent(action).apply{if(uri!=null)data=uri;addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)}
  fun appDetails(packageName:String)=intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:$packageName"))
  fun uninstall(packageName:String)=intent(Intent.ACTION_DELETE,Uri.parse("package:$packageName"))
- fun permissions(packageName:String)=intent("android.intent.action.MANAGE_APP_ALL_FILES_ACCESS_PERMISSION",Uri.parse("package:$packageName"))
+ fun permissions(packageName:String)=appDetails(packageName)
  fun notificationSettings(packageName:String)=intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply{putExtra(Settings.EXTRA_APP_PACKAGE,packageName)}
  fun accessibilitySettings()=intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
  fun deviceAdminSettings()=intent("android.settings.SECURITY_SETTINGS")
