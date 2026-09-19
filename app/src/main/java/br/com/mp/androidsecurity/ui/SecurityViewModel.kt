@@ -17,7 +17,16 @@ data class SecurityUiState(val scanning:Boolean=false,val result:ScanResult?=nul
 class SecurityViewModel(a:Application):AndroidViewModel(a){
  private val _state=MutableStateFlow(SecurityUiState())
  val state:StateFlow<SecurityUiState> = _state
- fun scan(){if(_state.value.scanning)return;_state.value=_state.value.copy(scanning=true);viewModelScope.launch(Dispatchers.Default){try{_state.value=SecurityUiState(result=LocalSecurityScanner(getApplication()).scan())}catch(t:Throwable){_state.value=SecurityUiState(error=t.message)}}}}
+
+ fun scan(){
+  if(_state.value.scanning)return
+  _state.value=_state.value.copy(scanning=true,error=null)
+  viewModelScope.launch(Dispatchers.Default){
+   try{_state.value=SecurityUiState(result=LocalSecurityScanner(getApplication<Application>()).scan())}
+   catch(t:Throwable){_state.value=SecurityUiState(error=t.message)}
+  }
+ }
+
  fun open(intent:Intent){getApplication<Application>().startActivity(intent)}
  fun intent(action:String,uri:Uri?=null):Intent=Intent(action).apply{if(uri!=null)data=uri;addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)}
  fun appDetails(packageName:String)=intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:$packageName"))
