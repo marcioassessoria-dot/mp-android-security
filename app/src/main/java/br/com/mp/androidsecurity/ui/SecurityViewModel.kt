@@ -3,6 +3,10 @@ import android.app.Application
 import android.content.Intent
 import android.net.Uri
 import android.provider.Settings
+import android.net.VpnService
+import android.os.Build
+import br.com.mp.androidsecurity.network.AdBlockVpnService
+import br.com.mp.androidsecurity.network.NetworkBlockStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import br.com.mp.androidsecurity.model.ScanResult
@@ -38,4 +42,8 @@ class SecurityViewModel(a:Application):AndroidViewModel(a){
  fun emergencySettings()=intent(Settings.ACTION_SETTINGS)
  fun safeModeSettings()=intent(Settings.ACTION_SETTINGS)
  fun privateDnsSettings()=intent(Settings.ACTION_WIRELESS_SETTINGS)
+ fun vpnPrepare():Intent?=VpnService.prepare(getApplication<Application>())
+ fun startAdBlock(){val i=Intent(getApplication<Application>(),AdBlockVpnService::class.java);if(Build.VERSION.SDK_INT>=26)getApplication<Application>().startForegroundService(i) else getApplication<Application>().startService(i)}
+ fun stopAdBlock(){getApplication<Application>().stopService(Intent(getApplication<Application>(),AdBlockVpnService::class.java))}
+ fun clearNetworkEvents(){NetworkBlockStore.clear()}
 }
