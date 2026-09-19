@@ -17,4 +17,28 @@ object RiskEngine{
  }.distinct()
  fun level(s:Int)=when{ s>=50->RiskLevel.HIGH;s>=30->RiskLevel.SUSPICIOUS;s>=15->RiskLevel.ATTENTION;else->RiskLevel.LOW}
  fun score(req:List<String>,granted:Set<String>,access:Boolean,admin:Boolean)=(req.filter{it in granted}.sumOf(::points)+(if(access)10 else 0)+(if(admin)10 else 0)).coerceAtMost(100)
+ fun adwareIndicators(req:List<String>,granted:Set<String>,access:Boolean,installer:String?,firstInstallTime:Long,isSystemApp:Boolean):List<AdwareIndicator>{
+  val out=mutableListOf<AdwareIndicator>()
+  if(Manifest.permission.SYSTEM_ALERT_WINDOW in granted) out+=AdwareIndicator("Sobreposição de tela","Pode exibir conteúdo por cima de outros aplicativos; combinado com outros sinais, é um indicador de propaganda intrusiva ou fraude.",20)
+  if(access) out+=AdwareIndicator("Acessibilidade ativa","Pode ler elementos da tela e automatizar toques; é abusada por algumas ameaças para controlar o aparelho.",20)
+  if(Manifest.permission.REQUEST_INSTALL_PACKAGES in granted) out+=AdwareIndicator("Instalação de APKs","Pode solicitar instalação de outros pacotes; aumenta o risco quando combinado com sideloading ou outros indicadores.",15)
+  if("android.permission.RECEIVE_BOOT_COMPLETED" in req) out+=AdwareIndicator("Inicialização automática","Pode iniciar após a reinicialização; isoladamente não é malicioso, mas reforça outros sinais.",5)
+  if(installer.isNullOrBlank()&&!isSystemApp) out+=AdwareIndicator("Instalador não identificado","A origem da instalação não foi identificada; isso pode ocorrer com APKs instalados fora de lojas.",8)
+  if(System.currentTimeMillis()-firstInstallTime<=7L*24*60*60*1000&&!isSystemApp) out+=AdwareIndicator("Instalação recente","Instalado nos últimos 7 dias; é apenas contexto e não prova infecção.",5)
+  return out
+ }
+ fun adwareScore(indicators:List<AdwareIndicator>,granted:Set<String>,access:Boolean):Int{
+  val combo=when{
+   Manifest.permission.SYSTEM_ALERT_WINDOW in granted&&access->20
+   Manifest.permission.SYSTEM_ALERT_WINDOW in granted&&Manifest.permission.REQUEST_INSTALL_PACKAGES in granted->15
+   access&&Manifest.permission.REQUEST_INSTALL_PACKAGES in granted->15
+   else->0
+  }
+  return (indicators.sumOf{it.points}+combo).coerceAtMost(100)
+ }
+ fun adwareLevel(score:Int,indicators:List<AdwareIndicator>):AdwareLevel=when{
+  indicators.size>=2&&score>=45->AdwareLevel.HIGH
+  indicators.size>=2&&score>=25->AdwareLevel.POSSIBLE
+  else->AdwareLevel.NONE
+ }
 }
