@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "updated_at": "2026-09-19",
+  "threats": [
+    {"name":"StreamRat","category":"Trojan bancário / infostealer","vectors":"Anúncios maliciosos, páginas falsas e APK por sideload","behaviors":"Captura de tela, dados digitados, telas falsas e controle remoto","detectionFocus":"Sideloading + acessibilidade + sobreposição + controle remoto","updated":"Set/2026"},
+    {"name":"Gigabud","category":"Trojan bancário","vectors":"Phishing por SMS, redes sociais e sites falsos","behaviors":"Acessibilidade, sobreposição, perfil de trabalho e clonagem de app bancário","detectionFocus":"Acessibilidade + overlay + instalação de APK + perfis de trabalho","updated":"Set/2026"},
+    {"name":"RatHat","category":"Trojan / RAT","vectors":"Smishing, anúncios maliciosos e páginas falsas","behaviors":"Acessibilidade, Wireless Debugging/ADB e controle remoto automatizado","detectionFocus":"Acessibilidade + sideloading + sinais de depuração sem fio","updated":"Set/2026"},
+    {"name":"Keenadu","category":"Backdoor / ad fraud","vectors":"Firmware pré-instalado, apps de sistema comprometidos e alguns casos em lojas","behaviors":"Fraude publicitária, comportamento de bot e potencial controle","detectionFocus":"Apps de sistema anômalos + origem/assinatura + comportamento","updated":"Fev/2026"},
+    {"name":"BeatBanker / BTMOB","category":"Trojan bancário / RAT","vectors":"Apps falsos, incluindo imitações de Starlink e serviços públicos","behaviors":"Persistência, RAT e roubo financeiro; campanha observada no Brasil","detectionFocus":"Sideloading + persistência + permissões + origem","updated":"Mar/2026"}
+  ]
+}
