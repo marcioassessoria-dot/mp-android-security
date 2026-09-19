@@ -5,7 +5,6 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import br.com.mp.androidsecurity.model.*
 @Composable fun SecurityApp(vm:SecurityViewModel){
  val state by vm.state.collectAsState()
  Scaffold(topBar={TopAppBar(title={Text("MP Android Security")})}){pad->
@@ -16,7 +15,7 @@ import br.com.mp.androidsecurity.model.*
    state.result?.let{result->
     item{Card{Column(Modifier.padding(16.dp)){Text("Apps: " + result.apps.size);Text("Alto risco: " + result.highRiskCount);Text("Suspeitos: " + result.suspiciousCount);Text("Atenção: " + result.attentionCount);Text("Acessibilidade: " + result.accessibility.size);Text("Administradores: " + result.deviceAdmins.size)}}}
     items(result.apps.take(100),key={it.packageName}){app->
-     item{Card{Column(Modifier.padding(12.dp)){Text(app.appName + " — " + app.riskLevel.label);Text(app.packageName);Text("Risco " + app.riskScore + "/100");if(app.accessibilityEnabled)Text("Acessibilidade ativa");if(app.deviceAdminActive)Text("Administrador ativo")}}}
+     Card{Column(Modifier.padding(12.dp)){Text(app.appName + " — " + app.riskLevel.label);Text(app.packageName);Text("Risco " + app.riskScore + "/100");if(app.accessibilityEnabled)Text("Acessibilidade ativa");if(app.deviceAdminActive)Text("Administrador ativo")}}
     }
    }
   }
