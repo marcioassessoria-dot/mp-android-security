@@ -6,7 +6,7 @@ import android.os.Build
 import br.com.mp.androidsecurity.model.*
 class InstalledAppsScanner(private val c:Context){
  private val pm=c.packageManager
- fun scan(acc:Set<String>,admins:Set<String>):List<InstalledAppInfo>=pm.getInstalledPackages(PackageManager.GET_PERMISSIONS).mapNotNull{pkg->
+ fun scan(acc:Set<String>,admins:Set<String>): List<InstalledAppInfo> =pm.getInstalledPackages(PackageManager.GET_PERMISSIONS).mapNotNull{pkg->
   val ai=pkg.applicationInfo?:return@mapNotNull null
   val allRequested=pkg.requestedPermissions.orEmpty().toList()
   val requested=allRequested.filter(RiskEngine::isSensitive)
