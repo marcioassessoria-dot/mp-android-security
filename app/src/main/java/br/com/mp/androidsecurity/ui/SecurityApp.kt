@@ -5,6 +5,8 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable fun SecurityApp(vm:SecurityViewModel){
  val state by vm.state.collectAsState()
  Scaffold(topBar={TopAppBar(title={Text("MP Android Security")})}){pad->
