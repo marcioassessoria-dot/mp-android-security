@@ -37,4 +37,5 @@ class SecurityViewModel(a:Application):AndroidViewModel(a){
  fun deviceAdminSettings()=intent("android.settings.SECURITY_SETTINGS")
  fun emergencySettings()=intent(Settings.ACTION_SETTINGS)
  fun safeModeSettings()=intent(Settings.ACTION_SETTINGS)
+ fun privateDnsSettings()=intent(Settings.ACTION_WIRELESS_SETTINGS)
 }
