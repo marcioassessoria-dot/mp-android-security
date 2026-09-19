@@ -9,9 +9,22 @@ import kotlin.system.measureTimeMillis
 class LocalSecurityScanner(private val c:Context){
  private val apps=InstalledAppsScanner(c); private val browser=BrowserScanner(c); private val acc=AccessibilityScanner(c); private val admins=DeviceAdminScanner(c)
  fun scan():ScanResult{
-  lateinit var a:List<AccessibilityFinding>; lateinit var d:List<DeviceAdminFinding>; lateinit var p:List<InstalledAppInfo>; lateinit var b:List<InstalledAppInfo>; lateinit var mon:MonitoringStatus
-  val ms=measureTimeMillis{a=acc.scan();d=admins.scan();p=apps.scan(a.map{it.packageName}.toSet(),d.map{it.packageName}.toSet());val bp=browser.scan();b=p.filter{it.packageName in bp};mon=monitoring(a,d,p)}
-  return ScanResult(p,b,a,d,mon,ms)
+  lateinit var a:List<AccessibilityFinding>; lateinit var d:List<DeviceAdminFinding>; lateinit var p:List<InstalledAppInfo>; lateinit var b:List<InstalledAppInfo>; lateinit var mon:MonitoringStatus; lateinit var dns:PrivateDnsStatus
+  val ms=measureTimeMillis{a=acc.scan();d=admins.scan();p=apps.scan(a.map{it.packageName}.toSet(),d.map{it.packageName}.toSet());val bp=browser.scan();b=p.filter{it.packageName in bp};mon=monitoring(a,d,p);dns=privateDns()}
+  return ScanResult(p,b,a,d,mon,dns,ms)
+ }
+ private fun privateDns():PrivateDnsStatus{
+  if(android.os.Build.VERSION.SDK_INT<Build.VERSION_CODES.P) return PrivateDnsStatus(PrivateDnsState.UNSUPPORTED,null,false,"O Android deste aparelho não oferece a configuração de DNS privado.")
+  val mode=Settings.Global.getString(c.contentResolver,"private_dns_mode").orEmpty().lowercase()
+  val provider=Settings.Global.getString(c.contentResolver,"private_dns_specifier")?.trim()?.takeIf{it.isNotBlank()}
+  val normalized=provider?.lowercase()?.removeSuffix(".")
+  val isAdGuard=normalized=="dns.adguard.com" || normalized=="dns.adguard-dns.com" || normalized=="family.adguard-dns.com" || normalized=="unfiltered.adguard-dns.com"
+  return when(mode){
+   "off"->PrivateDnsStatus(PrivateDnsState.OFF,provider,false,"DNS privado está desativado.")
+   "opportunistic"->PrivateDnsStatus(PrivateDnsState.AUTOMATIC,provider,false,"DNS privado está em modo automático; o Android escolhe o provedor quando disponível.")
+   "hostname"->PrivateDnsStatus(PrivateDnsState.PROVIDER,provider,isAdGuard,if(provider==null)"DNS privado está configurado, mas o provedor não foi identificado." else if(isAdGuard)"AdGuard DNS identificado." else "Provedor DNS personalizado identificado.")
+   else->PrivateDnsStatus(PrivateDnsState.UNKNOWN,provider,isAdGuard,"Não foi possível identificar com segurança o modo atual do DNS privado.")
+  }
  }
  private fun monitoring(a:List<AccessibilityFinding>,d:List<DeviceAdminFinding>,apps:List<InstalledAppInfo>):MonitoringStatus{
   val f=mutableListOf<MonitoringFinding>()
