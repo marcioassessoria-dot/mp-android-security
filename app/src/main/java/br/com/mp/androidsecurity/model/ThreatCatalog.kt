@@ -1,6 +1,6 @@
 package br.com.mp.androidsecurity.model
 
-data class ThreatIntel(val name:String,val category:String,val vectors:String,val behaviors:String,val detectionFocus:String,val updated:String)
+data class ThreatIntel(val name:String,val category:String,val vectors:String,val behaviors:String,val detectionFocus:String,val updated:String,val packageNames:List<String> = emptyList(),val certificateSha256:List<String> = emptyList(),val apkSha256:List<String> = emptyList())
 
 object ThreatCatalog{
  const val lastResearch="19/09/2026"
