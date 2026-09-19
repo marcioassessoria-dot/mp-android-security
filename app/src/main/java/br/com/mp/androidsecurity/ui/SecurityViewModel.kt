@@ -8,6 +8,9 @@ import android.os.Build
 import br.com.mp.androidsecurity.network.AdBlockVpnService
 import br.com.mp.androidsecurity.network.NetworkBlockStore
 import br.com.mp.androidsecurity.report.ReportGenerator
+import br.com.mp.androidsecurity.threat.ThreatIntelRepository
+import br.com.mp.androidsecurity.threat.ThreatIntelState
+import br.com.mp.androidsecurity.threat.ThreatIntelWorker
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import br.com.mp.androidsecurity.model.ScanResult
@@ -16,9 +19,19 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
+
 data class SecurityUiState(val scanning:Boolean=false,val result:ScanResult?=null,val error:String?=null)
+
 class SecurityViewModel(a:Application):AndroidViewModel(a){
+ private val threatRepo=ThreatIntelRepository(a)
+ private val _threatIntel=MutableStateFlow(threatRepo.cachedState())
+ val threatIntel:StateFlow<ThreatIntelState> = _threatIntel
  private val _state=MutableStateFlow(SecurityUiState());val state:StateFlow<SecurityUiState> = _state
+
+ init{ThreatIntelWorker.schedule(a);syncThreatIntel()}
+
+ fun syncThreatIntel(){if(_threatIntel.value.syncing)return;_threatIntel.value=_threatIntel.value.copy(syncing=true,error=null);viewModelScope.launch(Dispatchers.IO){val r=threatRepo.sync();_threatIntel.value=r.copy(syncing=false)}}
+
  fun scan(){if(_state.value.scanning)return;_state.value=_state.value.copy(scanning=true,error=null);viewModelScope.launch(Dispatchers.Default){try{_state.value=SecurityUiState(result=LocalSecurityScanner(getApplication<Application>()).scan())}catch(t:Throwable){_state.value=SecurityUiState(error=t.message)}}}
  fun open(intent:Intent){getApplication<Application>().startActivity(intent)}
  private fun intent(action:String,uri:Uri?=null)=Intent(action).apply{if(uri!=null)data=uri;addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)}
