@@ -29,10 +29,12 @@ fun SecurityApp(vm:SecurityViewModel){
       Text("Atenção: ${result.attentionCount}  •  Baixo: ${result.lowRiskCount}")
       Text("Acessibilidade ativa: ${result.accessibility.size}  •  Administradores: ${result.deviceAdmins.size}")
       Text("Possível adware: ${result.possibleAdwareCount}  •  Alto indício: ${result.highAdwareCount}")
+      Text("Monitoramento: ${result.monitoring.level.label}")
       Text("Tempo: ${result.durationMs} ms")
      }}
     }
     items(result.apps,key={it.packageName}){app->AppCard(app)}
+    item{MonitoringCard(result.monitoring)}
     item{ThreatIntelCard()}
    }
   }
@@ -71,6 +73,17 @@ private fun AppCard(app:InstalledAppInfo){
  }}
 }
 
+@Composable
+private fun MonitoringCard(status:MonitoringStatus){
+ Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
+  Text("Detector de Monitoramento",style=MaterialTheme.typography.titleLarge)
+  Text(status.level.label)
+  Text("O resultado indica configurações e sinais observáveis; não prova, sozinho, que alguém esteja espionando o aparelho.")
+  status.findings.forEach{Text("• ${it.title}: ${it.detail}",style=MaterialTheme.typography.bodySmall)}
+  if(status.findings.isEmpty()) Text("Nenhum indicador relevante foi encontrado na análise atual.")
+ }
+ }
+}
 @Composable
 private fun ThreatIntelCard(){
  var expanded by remember{mutableStateOf(false)}
