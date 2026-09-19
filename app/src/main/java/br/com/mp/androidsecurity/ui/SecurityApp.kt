@@ -1,251 +1,40 @@
 package br.com.mp.androidsecurity.ui
-
 import android.text.format.DateFormat
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
-import br.com.mp.androidsecurity.network.NetworkBlockStore
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import br.com.mp.androidsecurity.model.*
-
+import br.com.mp.androidsecurity.network.NetworkBlockStore
 @OptIn(ExperimentalMaterial3Api::class)
-@Composable
-fun SecurityApp(vm:SecurityViewModel){
- val state by vm.state.collectAsState()
- val networkEvents by NetworkBlockStore.events.collectAsState()
- val vpnLauncher=rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()){if(it.resultCode==android.app.Activity.RESULT_OK)vm.startAdBlock()}
- Scaffold(topBar={TopAppBar(title={Text("MP Android Security")})}){pad->
-  LazyColumn(Modifier.fillMaxSize().padding(pad).padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
-   item{Text("Análise completa de aplicativos",style=MaterialTheme.typography.headlineSmall);Text("Permissões, acessibilidade, administrador, instalação e nível de risco.") }
-   item{Button(onClick=vm::scan,enabled=!state.scanning,modifier=Modifier.fillMaxWidth()){Text(if(state.scanning)"ANALISANDO..." else "ANALISAR APLICATIVOS")}}\n   state.result?.let{r->item{Card{Row(Modifier.fillMaxWidth().padding(14.dp),horizontalArrangement=Arrangement.SpaceEvenly){Column{Text("Risco > 80",style=MaterialTheme.typography.titleSmall);Text(r.apps.count{it.riskScore>=80}.toString(),style=MaterialTheme.typography.headlineSmall)};Column{Text("Navegadores analisados",style=MaterialTheme.typography.titleSmall);Text(r.browsers.size.toString(),style=MaterialTheme.typography.headlineSmall)}}}}}
-   item{AboutCard()}
-   item{EmergencyCard(vm)}
-   item{GuidedToolsCard(vm)}
-   state.error?.let{item{Text("Erro: $it",color=MaterialTheme.colorScheme.error)}}
-   state.result?.let{result->
-    item{
-     Card{Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){
-      Text("Resumo da análise",style=MaterialTheme.typography.titleLarge)
-      Text("Aplicativos analisados: ${result.apps.size}")
-      Text("Alto risco: ${result.highRiskCount}  •  Suspeitos: ${result.suspiciousCount}")
-      Text("Atenção: ${result.attentionCount}  •  Baixo: ${result.lowRiskCount}")
-      Text("Acessibilidade ativa: ${result.accessibility.size}  •  Administradores: ${result.deviceAdmins.size}")
-      Text("Possível adware: ${result.possibleAdwareCount}  •  Alto indício: ${result.highAdwareCount}")
-      Text("Monitoramento: ${result.monitoring.level.label}")
-      Text("Tempo: ${result.durationMs} ms")
-     }}
-    }
-    val highRisk=result.apps.filter{it.riskScore>=80}
-    item{HighRiskHeader(highRisk.size)}
-    items(highRisk,key={it.packageName}){app->AppCard(vm,app)}
-    item{PrivateDnsCard(vm,result.privateDns)}
-    item{NetworkProtectionCard(vm,vpnLauncher,networkEvents)}
-    item{BrowserCard(result.browsers)}
-    item{MonitoringCard(result.monitoring)}
-    item{ThreatIntelCard()}
-   }
-  }
- }
-}
-
-@Composable
-private fun AppCard(vm:SecurityViewModel,app:InstalledAppInfo){
- var expanded by remember(app.packageName){mutableStateOf(false)}
- Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){
-  Text(app.appName,style=MaterialTheme.typography.titleMedium)
-  Text("Risco ${app.riskScore}/100 • ${app.riskLevel.label}")
-  Text(app.packageName,style=MaterialTheme.typography.bodySmall)
-  if(app.adwareLevel!=AdwareLevel.NONE)Text("🟠 ${app.adwareLevel.label}: ${app.adwareScore}/100")
-  Row(horizontalArrangement=Arrangement.spacedBy(8.dp)){Text(app.origin.label);Text(if(app.enabled)"Ativo" else "Desativado")}
-  if(app.riskReasons.isNotEmpty()){Text("Indicadores:");app.riskReasons.take(if(expanded)10 else 3).forEach{Text("• $it",style=MaterialTheme.typography.bodySmall)}}
-  TextButton(onClick={expanded=!expanded}){Text(if(expanded)"OCULTAR DETALHES" else "VER DETALHES")}
-  if(expanded){
-   HorizontalDivider()
-   Text("Informações",style=MaterialTheme.typography.titleSmall)
-   Text("Versão: ${app.versionName ?: "desconhecida"} (${app.versionCode})")
-   Text("Target SDK: ${app.targetSdk}")
-   Text("Instalado em: ${DateFormat.format("dd/MM/yyyy HH:mm",app.firstInstallTime)}")
-   Text("Atualizado em: ${DateFormat.format("dd/MM/yyyy HH:mm",app.lastUpdateTime)}")
-   Text("Instalador: ${app.installer ?: "desconhecido"}")
-   if(app.accessibilityEnabled)Text("⚠ Acessibilidade ativa")
-   if(app.deviceAdminActive)Text("⚠ Administrador do dispositivo ativo")
-   ActionButtons(vm,app)
-   if(app.adwareIndicators.isNotEmpty()){
-    Text("Indicadores de possível adware",style=MaterialTheme.typography.titleSmall)
-    app.adwareIndicators.forEach{Text("• ${it.title} (+${it.points}) — ${it.detail}",style=MaterialTheme.typography.bodySmall)}
-   }
-   Text("Permissões sensíveis",style=MaterialTheme.typography.titleSmall)
-   if(app.requestedPermissions.isEmpty())Text("Nenhuma das permissões monitoradas foi declarada.")
-   app.requestedPermissions.forEach{p->Text("${if(p.granted)"✓" else "○"} ${p.label} — ${if(p.granted)"concedida" else "não concedida"}")}
+@Composable fun SecurityApp(vm:SecurityViewModel){
+ val state by vm.state.collectAsState();val events by NetworkBlockStore.events.collectAsState();val launcher=rememberLauncherForActivityResult(ActivityResultContracts.StartActivityForResult()){if(it.resultCode==android.app.Activity.RESULT_OK)vm.startAdBlock()}
+ Scaffold(topBar={TopAppBar(title={Text("MP Android Security")})}){pad->LazyColumn(Modifier.fillMaxSize().padding(pad).padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
+  item{Text("Central de diagnóstico e proteção",style=MaterialTheme.typography.headlineSmall);Text("Scanner local para assistência técnica e diagnóstico guiado.")}
+  item{Button(onClick=vm::scan,enabled=!state.scanning,modifier=Modifier.fillMaxWidth()){Text(if(state.scanning)"ANALISANDO..." else "ANÁLISE COMPLETA")}}
+  item{QuickActions(vm,state.result,events,launcher)}
+  item{AboutCard()}
+  state.error?.let{item{Text("Erro: "+it,color=MaterialTheme.colorScheme.error)}}
+  state.result?.let{r->
+   item{SummaryCard(r)};item{DiagnosticsCard(r.diagnostics)};item{PrivateDnsCard(vm,r.privateDns)};item{NetworkProtectionCard(vm,launcher,events)};item{MonitoringCard(r.monitoring)};item{AdwareRemovalAssistant(vm,r)}
+   val high=r.apps.filter{it.riskScore>=80};item{HighRiskHeader(high.size)};items(high,key={it.packageName}){AppCard(vm,it)}
+   item{BrowserCard(r.browsers)};item{ThreatIntelCard()}
   }
  }}
 }
-
-@Composable
-private fun PrivateDnsCard(vm:SecurityViewModel,status:PrivateDnsStatus){
- Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
-  Text("DNS privado",style=MaterialTheme.typography.titleLarge)
-  Text("Status: "+status.state.label)
-  Text("Provedor: "+(status.provider ?: "não identificado"))
-  if(status.isAdGuard) Text("✓ AdGuard DNS identificado",style=MaterialTheme.typography.titleMedium)
-  Text(status.detail,style=MaterialTheme.typography.bodySmall)
-  Text("O DNS ajuda a bloquear domínios de anúncios, rastreadores e algumas ameaças conhecidas, mas não remove aplicativos maliciosos.",style=MaterialTheme.typography.bodySmall)
-  Button(onClick={vm.open(vm.privateDnsSettings())},modifier=Modifier.fillMaxWidth()){Text("ABRIR CONFIGURAÇÕES DE REDE")}
- }
- }
-}
-@Composable
-private fun NetworkProtectionCard(vm:SecurityViewModel,launcher:androidx.activity.result.ActivityResultLauncher<android.content.Intent>,events:List<NetworkBlockEvent>){
- Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
-  Text("Bloqueador de anúncios e rastreadores",style=MaterialTheme.typography.titleLarge)
-  Text("A proteção usa uma VPN local para interceptar consultas DNS. Quando o Android fornece o UID da conexão, o evento é atribuído ao aplicativo que originou a consulta.")
-  Text("Bloqueios registrados: "+events.size)
-  Row(horizontalArrangement=Arrangement.spacedBy(7.dp)){
-   Button(onClick={val i=vm.vpnPrepare();if(i==null)vm.startAdBlock() else launcher.launch(i)},modifier=Modifier.weight(1f)){Text("ATIVAR")}
-   OutlinedButton(onClick=vm::stopAdBlock,modifier=Modifier.weight(1f)){Text("DESATIVAR")}
-  }
-  if(events.isNotEmpty()){
-   Text("Últimos bloqueios",style=MaterialTheme.typography.titleMedium)
-   events.takeLast(10).asReversed().forEach{e->
-    Text("• "+(e.appName ?: "Aplicativo não identificado")+" — "+e.domain,style=MaterialTheme.typography.bodySmall)
-    Text("  "+(e.packageName ?: "UID "+e.uid)+" • "+e.reason,style=MaterialTheme.typography.bodySmall)
-   }
-   TextButton(onClick=vm::clearNetworkEvents){Text("LIMPAR HISTÓRICO")}
-  }
-  Text("Limitação: a atribuição depende das informações que o Android fornece à VPN. Consultas feitas por DoH/DoT, outras VPNs ou mecanismos fora do DNS interceptado podem não aparecer.",style=MaterialTheme.typography.bodySmall)
- }
- }
-}
-@Composable
-private fun MonitoringCard(status:MonitoringStatus){
- Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
-  Text("Detector de Monitoramento",style=MaterialTheme.typography.titleLarge)
-  Text(status.level.label)
-  Text("O resultado indica configurações e sinais observáveis; não prova, sozinho, que alguém esteja espionando o aparelho.")
-  status.findings.forEach{Text("• ${it.title}: ${it.detail}",style=MaterialTheme.typography.bodySmall)}
-  if(status.findings.isEmpty()) Text("Nenhum indicador relevante foi encontrado na análise atual.")
- }
- }
-}
-@Composable
-private fun ThreatIntelCard(){
- var expanded by remember{mutableStateOf(false)}
- Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
-  Text("Inteligência de ameaças Android",style=MaterialTheme.typography.titleLarge)
-  Text("Pesquisa atualizada em "+ThreatCatalog.lastResearch+". A lista orienta a análise de comportamento; não é uma assinatura antivírus.")
-  ThreatCatalog.threats.take(if(expanded)ThreatCatalog.threats.size else 4).forEach{t->
-   Text(t.name,style=MaterialTheme.typography.titleMedium)
-   Text(t.category+" • Vetor: "+t.vectors,style=MaterialTheme.typography.bodySmall)
-   Text("Comportamento: "+t.behaviors,style=MaterialTheme.typography.bodySmall)
-   Text("Foco do scanner: "+t.detectionFocus,style=MaterialTheme.typography.bodySmall)
-  }
-  TextButton(onClick={expanded=!expanded}){Text(if(expanded)"OCULTAR AMEAÇAS" else "VER AMEAÇAS E MÉTODOS")}
- }}
-}
-@Composable
-private fun ActionButtons(vm:SecurityViewModel,app:InstalledAppInfo){
- Column(verticalArrangement=Arrangement.spacedBy(6.dp)){
-  Text("Ferramentas de segurança",style=MaterialTheme.typography.titleSmall)
-  Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
-   if(!app.isSystemApp)Button(onClick={vm.open(vm.uninstall(app.packageName))},modifier=Modifier.weight(1f)){Text("DESINSTALAR")}
-   Button(onClick={vm.open(vm.appDetails(app.packageName))},modifier=Modifier.weight(1f)){Text("REVISAR APP")}
-  }
-  Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
-   Button(onClick={vm.open(vm.notificationSettings(app.packageName))},modifier=Modifier.weight(1f)){Text("NOTIFICAÇÕES")}
-   Button(onClick={vm.open(vm.permissions(app.packageName))},modifier=Modifier.weight(1f)){Text("CONFIGURAÇÕES")}
-  }
-  Text("O Android confirma ações sensíveis. O MP Android Security não remove ou bloqueia outro app silenciosamente.",style=MaterialTheme.typography.bodySmall)
- }
-}
-@Composable
-private fun GuidedToolsCard(vm:SecurityViewModel){
- Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
-  Text("Ferramentas guiadas",style=MaterialTheme.typography.titleLarge)
-  Text("Acesse as telas oficiais do Android para revisar permissões, acessibilidade e administradores.")
-  Button(onClick={vm.open(vm.accessibilitySettings())},modifier=Modifier.fillMaxWidth()){Text("REVISAR ACESSIBILIDADE")}
-  Button(onClick={vm.open(vm.deviceAdminSettings())},modifier=Modifier.fillMaxWidth()){Text("REVISAR ADMINISTRADORES")}
- }}
-}
-@Composable
-private fun EmergencyCard(vm:SecurityViewModel){
- Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
-  Text("🚨 MODO DE EMERGÊNCIA",style=MaterialTheme.typography.titleLarge)
-  Text("Use quando o aparelho estiver abrindo propaganda, exibindo telas sobre outros apps ou apresentando comportamento anormal.")
-  Button(onClick={vm.open(vm.accessibilitySettings())},modifier=Modifier.fillMaxWidth()){Text("1. VERIFICAR ACESSIBILIDADE")}
-  Button(onClick={vm.open(vm.deviceAdminSettings())},modifier=Modifier.fillMaxWidth()){Text("2. VERIFICAR ADMINISTRADORES")}
-  Button(onClick={vm.open(vm.emergencySettings())},modifier=Modifier.fillMaxWidth()){Text("3. ABRIR CONFIGURAÇÕES")}
- }}
-}
-
-@Composable
-private fun AdwareRemovalAssistant(vm:SecurityViewModel,result:ScanResult?){
- val targets=result?.apps?.filter{it.adwareLevel!=AdwareLevel.NONE}.orEmpty()
- Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){
-  Text("Assistente de Remoção de Adware",style=MaterialTheme.typography.titleLarge)
-  Text(if(targets.isEmpty())"Faça uma análise para localizar aplicativos com indicadores de possível adware." else "Siga as etapas para cada aplicativo com indicadores. O Android confirma ações sensíveis.")
-  targets.take(5).forEach{app->
-   Text("${app.appName} • ${app.adwareLevel.label} (${app.adwareScore}/100)",style=MaterialTheme.typography.titleMedium)
-   Text("1. Detectar: ${app.adwareIndicators.size} indicador(es) encontrado(s).",style=MaterialTheme.typography.bodySmall)
-   Button(onClick={vm.open(vm.appDetails(app.packageName))},modifier=Modifier.fillMaxWidth()){Text("2. REVISAR PERMISSÕES")}
-   if(app.accessibilityEnabled) Button(onClick={vm.open(vm.accessibilitySettings())},modifier=Modifier.fillMaxWidth()){Text("3. DESATIVAR ACESSIBILIDADE")}
-   if(app.deviceAdminActive) Button(onClick={vm.open(vm.deviceAdminSettings())},modifier=Modifier.fillMaxWidth()){Text("3. DESATIVAR ADMINISTRADOR")}
-   if(!app.isSystemApp) Button(onClick={vm.open(vm.uninstall(app.packageName))},modifier=Modifier.fillMaxWidth()){Text("4. ABRIR DESINSTALAÇÃO")}
-   Button(onClick={vm.open(vm.safeModeSettings())},modifier=Modifier.fillMaxWidth()){Text("5. ORIENTAR MODO DE SEGURANÇA")}
-   Text("Em Modo de Segurança, o Android inicia sem a maioria dos aplicativos de terceiros. Depois de reiniciar nesse modo, tente novamente a desinstalação.",style=MaterialTheme.typography.bodySmall)
-   if(!app.isSystemApp) Button(onClick={vm.open(vm.uninstall(app.packageName))},modifier=Modifier.fillMaxWidth()){Text("6. REPETIR DESINSTALAÇÃO")}
-   Button(onClick=vm::scan,modifier=Modifier.fillMaxWidth()){Text("7. FAZER NOVA VARREDURA DE CONFIRMAÇÃO")}
-   HorizontalDivider()
-  }
- }}
-}
-
-@Composable
-private fun AboutCard(){
- var expanded by remember{mutableStateOf(false)}
- Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){
-  Text("Sobre o aplicativo",style=MaterialTheme.typography.titleLarge)
-  Text("MP Android Security",style=MaterialTheme.typography.headlineSmall)
-  Text("Versão 1.0.0")
-  Text("Desenvolvedor: Márcio Adriano Pimentel")
-  Text("Finalidade",style=MaterialTheme.typography.titleMedium)
-  Text("Ferramenta de diagnóstico e proteção guiada para Android. Analisa aplicativos instalados, permissões sensíveis, acessibilidade, administradores do dispositivo e indicadores de possível adware, oferecendo ações de revisão e remoção pelos recursos oficiais do Android.")
-  TextButton(onClick={expanded=!expanded}){Text(if(expanded)"OCULTAR INFORMAÇÕES" else "VER POLÍTICA, REPOSITÓRIO E LICENÇA")}
-  if(expanded){
-   Text("Política de privacidade",style=MaterialTheme.typography.titleMedium)
-   Text("O MP Android Security foi projetado para realizar as análises localmente no dispositivo. A versão atual não envia a lista de aplicativos, permissões ou resultados de análise para um servidor. A ferramenta deve ser usada apenas pelo proprietário ou por técnico autorizado do aparelho.")
-   Text("Repositório",style=MaterialTheme.typography.titleMedium)
-   Text("github.com/marcioassessoria-dot/mp-android-security")
-   Text("Licença",style=MaterialTheme.typography.titleMedium)
-   Text("Licença: MIT License")
-   Text("O código deste projeto é disponibilizado sob a licença MIT. Consulte o arquivo LICENSE no repositório para o texto integral da licença.")
-  }
- }}
-}
-@Composable
-private fun HighRiskHeader(count:Int){
- Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){
-  Text("Aplicativos de alto risco",style=MaterialTheme.typography.titleLarge)
-  Text("Exibindo somente pontuação heurística de 80/100 ou mais. Essa pontuação não é uma probabilidade de infecção.")
-  Text("Encontrados nesta análise: "+count)
- }}
-}
-@Composable
-private fun BrowserCard(browsers:List<InstalledAppInfo>){
- Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
-  Text("Análise de navegadores",style=MaterialTheme.typography.titleLarge)
-  Text("Navegadores instalados detectados pelo Android: "+browsers.size+".")
-  browsers.forEach{b->
-   Text(b.appName,style=MaterialTheme.typography.titleMedium)
-   Text(b.packageName+" • "+b.origin.label,style=MaterialTheme.typography.bodySmall)
-   Text("Risco heurístico: "+b.riskScore+"/100 • "+b.riskLevel.label)
-   Text("Permissões sensíveis concedidas: "+b.requestedPermissions.count{it.granted})
-   if(b.accessibilityEnabled) Text("⚠ Acessibilidade ativa")
-   if(b.deviceAdminActive) Text("⚠ Administrador ativo")
-  }
-  Text("Limitação: Android não permite a um app comum ler diretamente histórico, cookies, senhas, abas privadas ou o banco de dados interno de outro navegador. O scanner verifica o aplicativo, permissões e configurações observáveis.",style=MaterialTheme.typography.bodySmall)
- }}
-}
+@Composable private fun QuickActions(vm:SecurityViewModel,result:ScanResult?,events:List<NetworkBlockEvent>,launcher:androidx.activity.result.ActivityResultLauncher<android.content.Intent>){Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){Text("Ações rápidas",style=MaterialTheme.typography.titleLarge);Button(onClick=vm::scan,modifier=Modifier.fillMaxWidth()){Text("DIAGNÓSTICO RÁPIDO")};if(result!=null)Button(onClick={vm.shareReport(result,events)},modifier=Modifier.fillMaxWidth()){Text("GERAR RELATÓRIO PDF")};Button(onClick={vm.open(vm.accessibilitySettings())},modifier=Modifier.fillMaxWidth()){Text("REVISAR ACESSIBILIDADE")};Button(onClick={vm.open(vm.deviceAdminSettings())},modifier=Modifier.fillMaxWidth()){Text("REVISAR ADMINISTRADORES")}}}}
+@Composable private fun SummaryCard(r:ScanResult){Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){Text("Resumo",style=MaterialTheme.typography.titleLarge);Text("Aplicativos: ${r.apps.size}");Text("Risco ≥80: ${r.highRiskCount} • Suspeitos: ${r.suspiciousCount}");Text("Atenção: ${r.attentionCount} • Baixo: ${r.lowRiskCount}");Text("Possível adware: ${r.possibleAdwareCount} • Alto indício: ${r.highAdwareCount}");Text("Acessibilidade: ${r.accessibility.size} • Administradores: ${r.deviceAdmins.size}");Text("Monitoramento: ${r.monitoring.level.label}");Text("Tempo: ${r.durationMs} ms")}}}
+@Composable private fun DiagnosticsCard(d:DeviceDiagnostics){Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){Text("Saúde do dispositivo",style=MaterialTheme.typography.titleLarge);Text("${d.manufacturer} ${d.model} • Android ${d.androidVersion} / SDK ${d.sdk}");Text("Patch de segurança: ${d.securityPatch?:"não identificado"}");Text("RAM total: ${d.ramMb} MB");Text("Armazenamento: ${d.storageFreeMb} MB livres de ${d.storageTotalMb} MB");Text("Bateria: ${d.batteryPercent?.let{"$it%"}?:"não identificado"} • ${if(d.charging==true)"carregando" else "não carregando"}");Text("VPN: ${if(d.vpnActive)"ativa" else "não ativa"} • ADB: ${if(d.adbEnabled)"ativo" else "desativado"}");Text("Opções de desenvolvedor: ${if(d.developerOptions)"ativas" else "desativadas"}")}}}
+@Composable private fun PrivateDnsCard(vm:SecurityViewModel,s:PrivateDnsStatus){Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){Text("DNS privado",style=MaterialTheme.typography.titleLarge);Text("Status: ${s.state.label}");Text("Provedor: ${s.provider?:"não identificado"}");if(s.isAdGuard)Text("✓ AdGuard DNS identificado");Text(s.detail,style=MaterialTheme.typography.bodySmall);Button(onClick={vm.open(vm.privateDnsSettings())},modifier=Modifier.fillMaxWidth()){Text("ABRIR CONFIGURAÇÕES DE DNS")}}}}
+@Composable private fun NetworkProtectionCard(vm:SecurityViewModel,launcher:androidx.activity.result.ActivityResultLauncher<android.content.Intent>,events:List<NetworkBlockEvent>){val byApp=events.groupingBy{it.appName?:"Aplicativo não identificado"}.eachCount().entries.sortedByDescending{it.value}.take(5);Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){Text("Rede e bloqueador",style=MaterialTheme.typography.titleLarge);Text("Bloqueio DNS local com atribuição por UID quando o Android fornece essa informação.");Text("Bloqueios registrados: ${events.size}");Row(horizontalArrangement=Arrangement.spacedBy(7.dp)){Button(onClick={val i=vm.vpnPrepare();if(i==null)vm.startAdBlock()else launcher.launch(i)},modifier=Modifier.weight(1f)){Text("ATIVAR")};OutlinedButton(onClick=vm::stopAdBlock,modifier=Modifier.weight(1f)){Text("DESATIVAR")}};if(byApp.isNotEmpty()){Text("Aplicativos com mais bloqueios",style=MaterialTheme.typography.titleMedium);byApp.forEach{Text("• ${it.key}: ${it.value}")}};events.takeLast(12).asReversed().forEach{e->Text("• ${e.appName?:"Não identificado"} — ${e.domain}",style=MaterialTheme.typography.bodySmall);Text("  ${e.packageName?:"UID "+e.uid}",style=MaterialTheme.typography.bodySmall);Row{TextButton(onClick={vm.blockDomain(e.domain)}){Text("BLOQUEAR")};TextButton(onClick={vm.allowDomain(e.domain)}){Text("PERMITIR")}}};if(events.isNotEmpty())TextButton(onClick=vm::clearNetworkEvents){Text("LIMPAR HISTÓRICO")};Text("Limitações: DoH/DoT, outra VPN e mecanismos fora do DNS interceptado podem não aparecer. Isso não é inspeção completa de tráfego.",style=MaterialTheme.typography.bodySmall)}}}
+@Composable private fun MonitoringCard(s:MonitoringStatus){Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){Text("Detector de monitoramento",style=MaterialTheme.typography.titleLarge);Text(s.level.label);Text("Indicadores observáveis não provam, sozinhos, espionagem.");s.findings.forEach{Text("• ${it.title}: ${it.detail}",style=MaterialTheme.typography.bodySmall)};if(s.findings.isEmpty())Text("Nenhum indicador relevante.")}}}
+@Composable private fun AdwareRemovalAssistant(vm:SecurityViewModel,r:ScanResult){val targets=r.apps.filter{it.adwareLevel!=AdwareLevel.NONE}.take(8);Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){Text("Assistente de remoção de adware",style=MaterialTheme.typography.titleLarge);if(targets.isEmpty())Text("Nenhum aplicativo apresentou indicadores suficientes para entrar nesta lista.") else targets.forEach{a->Text("${a.appName} • ${a.adwareLevel.label} (${a.adwareScore}/100)",style=MaterialTheme.typography.titleMedium);Text("Indicadores: ${a.adwareIndicators.size}");Button(onClick={vm.open(vm.appDetails(a.packageName))},modifier=Modifier.fillMaxWidth()){Text("REVISAR APP")};if(!a.isSystemApp)Button(onClick={vm.open(vm.uninstall(a.packageName))},modifier=Modifier.fillMaxWidth()){Text("ABRIR DESINSTALAÇÃO")};HorizontalDivider()}}}}
+@Composable private fun AppCard(vm:SecurityViewModel,a:InstalledAppInfo){var expanded by remember(a.packageName){mutableStateOf(false)};Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){Text(a.appName,style=MaterialTheme.typography.titleMedium);Text("Risco ${a.riskScore}/100 • ${a.riskLevel.label}");Text(a.packageName,style=MaterialTheme.typography.bodySmall);Text(a.origin.label+" • "+if(a.enabled)"Ativo" else "Desativado");if(a.adwareLevel!=AdwareLevel.NONE)Text("Adware: ${a.adwareLevel.label} • ${a.adwareScore}/100");a.riskReasons.take(if(expanded)10 else 3).forEach{Text("• $it",style=MaterialTheme.typography.bodySmall)};TextButton(onClick={expanded=!expanded}){Text(if(expanded)"OCULTAR" else "VER ANÁLISE DO APP")};if(expanded){Text("Versão: ${a.versionName?:"desconhecida"} (${a.versionCode})");Text("Instalador: ${a.installer?:"desconhecido"}");Text("Target SDK: ${a.targetSdk}");Text("Instalado: "+DateFormat.format("dd/MM/yyyy HH:mm",a.firstInstallTime));Text("Atualizado: "+DateFormat.format("dd/MM/yyyy HH:mm",a.lastUpdateTime));if(a.accessibilityEnabled)Text("⚠ Acessibilidade ativa");if(a.deviceAdminActive)Text("⚠ Administrador ativo");a.adwareIndicators.forEach{Text("• ${it.title}: ${it.detail}",style=MaterialTheme.typography.bodySmall)};Text("Permissões sensíveis",style=MaterialTheme.typography.titleSmall);a.requestedPermissions.forEach{p->Text("${if(p.granted)"✓" else "○"} ${p.label}")};Row{if(!a.isSystemApp)Button(onClick={vm.open(vm.uninstall(a.packageName))}){Text("DESINSTALAR")};Button(onClick={vm.open(vm.appDetails(a.packageName))}){Text("REVISAR")}}}}}}
+@Composable private fun HighRiskHeader(n:Int){Card{Column(Modifier.padding(14.dp)){Text("Aplicativos de alto risco",style=MaterialTheme.typography.titleLarge);Text("Exibindo somente pontuação heurística de 80/100 ou mais. Não é probabilidade de infecção.");Text("Encontrados: $n")}}}
+@Composable private fun BrowserCard(b:List<InstalledAppInfo>){Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){Text("Navegadores analisados",style=MaterialTheme.typography.titleLarge);Text("Detectados: ${b.size}");b.forEach{Text("${it.appName} • ${it.riskScore}/100 • ${it.origin.label}");Text("Permissões sensíveis concedidas: ${it.requestedPermissions.count{p->p.granted}}",style=MaterialTheme.typography.bodySmall)};Text("O Android não permite a um app comum ler histórico, cookies, senhas ou banco privado de outro navegador.",style=MaterialTheme.typography.bodySmall)}}}
+@Composable private fun ThreatIntelCard(){var e by remember{mutableStateOf(false)};Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){Text("Inteligência de ameaças",style=MaterialTheme.typography.titleLarge);Text("Pesquisa atualizada em ${ThreatCatalog.lastResearch}. Orienta a análise comportamental; não é assinatura antivírus.");ThreatCatalog.threats.take(if(e)ThreatCatalog.threats.size else 4).forEach{Text(it.name,style=MaterialTheme.typography.titleMedium);Text("${it.category} • ${it.vectors}",style=MaterialTheme.typography.bodySmall)};TextButton(onClick={e=!e}){Text(if(e)"OCULTAR" else "VER AMEAÇAS")}}}}
+@Composable private fun AboutCard(){Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){Text("Sobre",style=MaterialTheme.typography.titleLarge);Text("MP Android Security 1.0.0");Text("Ferramenta local de diagnóstico e proteção guiada para Android. Não envia a lista de aplicativos ou resultados para servidor na versão atual.");Text("Desenvolvedor: Márcio Adriano Pimentel")}}}
