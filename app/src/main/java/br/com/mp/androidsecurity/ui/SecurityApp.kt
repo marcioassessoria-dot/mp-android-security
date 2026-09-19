@@ -99,7 +99,7 @@ private fun PrivateDnsCard(vm:SecurityViewModel,status:PrivateDnsStatus){
  }
 }
 @Composable
-private fun NetworkProtectionCard(vm:SecurityViewModel,launcher:androidx.activity.result.ActivityResultLauncher<android.content.Intent>,events:List<br.com.mp.androidsecurity.model.NetworkBlockEvent>){
+private fun NetworkProtectionCard(vm:SecurityViewModel,launcher:androidx.activity.result.ActivityResultLauncher<android.content.Intent>,events:List<NetworkBlockEvent>){
  Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
   Text("Bloqueador de anúncios e rastreadores",style=MaterialTheme.typography.titleLarge)
   Text("A proteção usa uma VPN local para interceptar consultas DNS. Quando o Android fornece o UID da conexão, o evento é atribuído ao aplicativo que originou a consulta.")
