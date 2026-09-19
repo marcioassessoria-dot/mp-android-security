@@ -27,7 +27,14 @@ class InstalledAppsScanner(private val c:Context){
   val adLevel=RiskEngine.adwareLevel(adScore,adIndicators)
   val versionCode=if(Build.VERSION.SDK_INT>=28)pkg.longVersionCode else @Suppress("DEPRECATION") pkg.versionCode.toLong()
   val cert=runCatching{SigningDigest.sha256(pkg)}.getOrNull()
-  val apkHash=runCatching {\n   val digest=MessageDigest.getInstance("SHA-256")\n   DigestInputStream(FileInputStream(ai.sourceDir),digest).use { input ->\n    val buffer=ByteArray(8192)\n    while(input.read(buffer)!=-1){}\n   }\n   digest.digest().joinToString(""){"%02x".format(it)}\n  }.getOrNull()
+  val apkHash=runCatching {
+   val digest=MessageDigest.getInstance("SHA-256")
+   DigestInputStream(FileInputStream(ai.sourceDir),digest).use { input ->
+    val buffer=ByteArray(8192)
+    while(input.read(buffer)!=-1){}
+   }
+   digest.digest().joinToString(""){"%02x".format(it)}
+  }.getOrNull()
   val reasons=if(isSystem)buildList{if(accessibility)add("Serviço de acessibilidade ativo");if(admin)add("Administrador do dispositivo ativo")}else(RiskEngine.reasons(requested,granted,accessibility,admin)+when(adLevel){AdwareLevel.HIGH->listOf("Possível adware: combinação de múltiplos indicadores");AdwareLevel.POSSIBLE->listOf("Indícios de possível adware: investigar os indicadores");else->emptyList()}).distinct()
   InstalledAppInfo(pkg.packageName,ai.loadLabel(pm).toString(),pkg.versionName,versionCode,ai.targetSdkVersion,isSystem,origin,ai.enabled,installer,pkg.firstInstallTime,pkg.lastUpdateTime,findings,accessibility,admin,cert,apkHash,reasons,score,RiskEngine.level(score),adIndicators,adScore,adLevel).let{base->
    val matches=ThreatCorrelationEngine.correlate(base,threats)
