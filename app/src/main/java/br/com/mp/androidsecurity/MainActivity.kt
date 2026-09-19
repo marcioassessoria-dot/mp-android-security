@@ -5,4 +5,5 @@ import androidx.activity.compose.setContent
 import androidx.lifecycle.viewmodel.compose.viewModel
 import br.com.mp.androidsecurity.ui.SecurityApp
 import br.com.mp.androidsecurity.ui.SecurityViewModel
-class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.onCreate(b);setContent{SecurityApp(viewModel<SecurityViewModel>())}}}
+import br.com.mp.androidsecurity.threat.ThreatIntelWorker
+class MainActivity:ComponentActivity(){override fun onCreate(b:Bundle?){super.onCreate(b);ThreatIntelWorker.schedule(this);setContent{SecurityApp(viewModel<SecurityViewModel>())}}}
