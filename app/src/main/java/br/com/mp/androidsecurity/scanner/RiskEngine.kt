@@ -7,7 +7,7 @@ object RiskEngine{
  fun isSensitive(permission:String)=permission in p
  fun points(permission:String)=p[permission]?:0
  fun label(permission:String)=labels[permission]?:permission.substringAfterLast('.')
- fun reasons(req:List<String>,granted:Set<String>,access:Boolean,admin:Boolean):List<String>=buildList{
+ fun reasons(req:List<String>,granted:Set<String>,access:Boolean,admin:Boolean): List<String> = buildList {
   granted.filter{it in p}.forEach{add("Permissão sensível: ${label(it)}")}
   if(access)add("Serviço de acessibilidade ativo")
   if(admin)add("Administrador do dispositivo ativo")
