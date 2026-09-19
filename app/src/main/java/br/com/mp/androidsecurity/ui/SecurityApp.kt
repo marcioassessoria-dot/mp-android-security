@@ -92,11 +92,11 @@ private fun ActionButtons(vm:SecurityViewModel,app:InstalledAppInfo){
   Text("Ferramentas de segurança",style=MaterialTheme.typography.titleSmall)
   Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
    if(!app.isSystemApp)Button(onClick={vm.open(vm.uninstall(app.packageName))},modifier=Modifier.weight(1f)){Text("DESINSTALAR")}
-   Button(onClick={vm.open(vm.appDetails(app.packageName)),modifier=Modifier.weight(1f)}>{Text("REVISAR APP")}
+   Button(onClick={vm.open(vm.appDetails(app.packageName))},modifier=Modifier.weight(1f)){Text("REVISAR APP")}
   }
   Row(horizontalArrangement=Arrangement.spacedBy(6.dp)){
-   Button(onClick={vm.open(vm.notificationSettings(app.packageName)),modifier=Modifier.weight(1f)}>{Text("NOTIFICAÇÕES")}
-   Button(onClick={vm.open(vm.permissions(app.packageName)),modifier=Modifier.weight(1f)}>{Text("CONFIGURAÇÕES")}
+   Button(onClick={vm.open(vm.notificationSettings(app.packageName))},modifier=Modifier.weight(1f)){Text("NOTIFICAÇÕES")}
+   Button(onClick={vm.open(vm.permissions(app.packageName))},modifier=Modifier.weight(1f)){Text("CONFIGURAÇÕES")}
   }
   Text("O Android confirma ações sensíveis. O MP Android Security não remove ou bloqueia outro app silenciosamente.",style=MaterialTheme.typography.bodySmall)
  }
@@ -121,6 +121,24 @@ private fun EmergencyCard(vm:SecurityViewModel){
  }}
 }
 
+@Composable
+private fun AdwareRemovalAssistant(vm:SecurityViewModel,result:ScanResult?){
+ val targets=result?.apps?.filter{it.adwareLevel!=AdwareLevel.NONE}.orEmpty()
+ Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){
+  Text("Assistente de Remoção de Adware",style=MaterialTheme.typography.titleLarge)
+  Text(if(targets.isEmpty())"Faça uma análise para localizar aplicativos com indicadores de possível adware." else "Siga as etapas para cada aplicativo com indicadores. O Android confirma ações sensíveis.")
+  targets.take(5).forEach{app->
+   Text("${app.appName} • ${app.adwareLevel.label} (${app.adwareScore}/100)",style=MaterialTheme.typography.titleMedium)
+   Text("1. Detectar: ${app.adwareIndicators.size} indicador(es) encontrado(s).",style=MaterialTheme.typography.bodySmall)
+   Button(onClick={vm.open(vm.appDetails(app.packageName))},modifier=Modifier.fillMaxWidth()){Text("2. REVISAR PERMISSÕES")}
+   if(app.accessibilityEnabled) Button(onClick={vm.open(vm.accessibilitySettings())},modifier=Modifier.fillMaxWidth()){Text("3. DESATIVAR ACESSIBILIDADE")}
+   if(app.deviceAdminActive) Button(onClick={vm.open(vm.deviceAdminSettings())},modifier=Modifier.fillMaxWidth()){Text("3. DESATIVAR ADMINISTRADOR")}
+   if(!app.isSystemApp) Button(onClick={vm.open(vm.uninstall(app.packageName))},modifier=Modifier.fillMaxWidth()){Text("4. ABRIR DESINSTALAÇÃO")}
+   Button(onClick=vm::scan,enabled=!result?.scanning.orEmpty(),modifier=Modifier.fillMaxWidth()){Text("5. FAZER NOVA VARREDURA DE CONFIRMAÇÃO")}
+   HorizontalDivider()
+  }
+ }}
+}
 
 @Composable
 private fun AboutCard(){
