@@ -34,7 +34,10 @@ fun SecurityApp(vm:SecurityViewModel){
       Text("Tempo: ${result.durationMs} ms")
      }}
     }
-    items(result.apps,key={it.packageName}){app->AppCard(vm,app)}
+    val highRisk=result.apps.filter{it.riskScore>=80}
+    item{HighRiskHeader(highRisk.size)}
+    items(highRisk,key={it.packageName}){app->AppCard(vm,app)}
+    item{BrowserCard(result.browsers)}
     item{MonitoringCard(result.monitoring)}
     item{ThreatIntelCard()}
    }
@@ -178,5 +181,29 @@ private fun AboutCard(){
    Text("Licença: MIT License")
    Text("O código deste projeto é disponibilizado sob a licença MIT. Consulte o arquivo LICENSE no repositório para o texto integral da licença.")
   }
+ }}
+}
+@Composable
+private fun HighRiskHeader(count:Int){
+ Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){
+  Text("Aplicativos de alto risco",style=MaterialTheme.typography.titleLarge)
+  Text("Exibindo somente pontuação heurística de 80/100 ou mais. Essa pontuação não é uma probabilidade de infecção.")
+  Text("Encontrados nesta análise: "+count)
+ }}
+}
+@Composable
+private fun BrowserCard(browsers:List<InstalledAppInfo>){
+ Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
+  Text("Análise de navegadores",style=MaterialTheme.typography.titleLarge)
+  Text("Navegadores instalados detectados pelo Android: "+browsers.size+".")
+  browsers.forEach{b->
+   Text(b.appName,style=MaterialTheme.typography.titleMedium)
+   Text(b.packageName+" • "+b.origin.label,style=MaterialTheme.typography.bodySmall)
+   Text("Risco heurístico: "+b.riskScore+"/100 • "+b.riskLevel.label)
+   Text("Permissões sensíveis concedidas: "+b.requestedPermissions.count{it.granted})
+   if(b.accessibilityEnabled) Text("⚠ Acessibilidade ativa")
+   if(b.deviceAdminActive) Text("⚠ Administrador ativo")
+  }
+  Text("Limitação: Android não permite a um app comum ler diretamente histórico, cookies, senhas, abas privadas ou o banco de dados interno de outro navegador. O scanner verifica o aplicativo, permissões e configurações observáveis.",style=MaterialTheme.typography.bodySmall)
  }}
 }
