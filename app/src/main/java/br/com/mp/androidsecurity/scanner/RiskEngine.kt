@@ -23,6 +23,10 @@ object RiskEngine{
   if(access) out+=AdwareIndicator("Acessibilidade ativa","Pode ler elementos da tela e automatizar toques; é abusada por algumas ameaças para controlar o aparelho.",20)
   if(Manifest.permission.REQUEST_INSTALL_PACKAGES in granted) out+=AdwareIndicator("Instalação de APKs","Pode solicitar instalação de outros pacotes; aumenta o risco quando combinado com sideloading ou outros indicadores.",15)
   if("android.permission.RECEIVE_BOOT_COMPLETED" in req) out+=AdwareIndicator("Inicialização automática","Pode iniciar após a reinicialização; isoladamente não é malicioso, mas reforça outros sinais.",5)
+  if("android.permission.POST_NOTIFICATIONS" in req && "android.permission.SYSTEM_ALERT_WINDOW" in granted) out+=AdwareIndicator("Notificações + sobreposição","A combinação pode ser usada para publicidade intrusiva; investigar se não houver justificativa funcional.",12)
+  if("android.permission.USE_FULL_SCREEN_INTENT" in req) out+=AdwareIndicator("Notificação em tela cheia","Pode apresentar conteúdo em tela cheia, inclusive em contexto de bloqueio; avaliar a finalidade do app.",12)
+  if("android.permission.READ_PHONE_STATE" in granted && Manifest.permission.SYSTEM_ALERT_WINDOW in granted) out+=AdwareIndicator("Contexto de chamadas + sobreposição","A combinação merece revisão quando anúncios aparecem após ligações.",15)
+  if("android.permission.BIND_ACCESSIBILITY_SERVICE" in req && access) out+=AdwareIndicator("Acessibilidade declarada e ativa","Acessibilidade ativa pode ser abusada para automatizar ações e facilitar publicidade ou fraude.",15)
   if(installer.isNullOrBlank()&&!isSystemApp) out+=AdwareIndicator("Instalador não identificado","A origem da instalação não foi identificada; isso pode ocorrer com APKs instalados fora de lojas.",8)
   if(System.currentTimeMillis()-firstInstallTime<=7L*24*60*60*1000&&!isSystemApp) out+=AdwareIndicator("Instalação recente","Instalado nos últimos 7 dias; é apenas contexto e não prova infecção.",5)
   return out
