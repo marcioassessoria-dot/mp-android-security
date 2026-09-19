@@ -27,4 +27,5 @@ class SecurityViewModel(a:Application):AndroidViewModel(a){
  fun accessibilitySettings()=intent(Settings.ACTION_ACCESSIBILITY_SETTINGS)
  fun deviceAdminSettings()=intent("android.settings.SECURITY_SETTINGS")
  fun emergencySettings()=intent(Settings.ACTION_SETTINGS)
+ fun safeModeSettings()=intent(Settings.ACTION_SETTINGS)
 }
