@@ -17,7 +17,8 @@ fun SecurityApp(vm:SecurityViewModel){
   LazyColumn(Modifier.fillMaxSize().padding(pad).padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
    item{Text("Análise completa de aplicativos",style=MaterialTheme.typography.headlineSmall);Text("Permissões, acessibilidade, administrador, instalação e nível de risco.") }
    item{Button(onClick=vm::scan,enabled=!state.scanning,modifier=Modifier.fillMaxWidth()){Text(if(state.scanning)"ANALISANDO..." else "ANALISAR APLICATIVOS")}}
-   item{AboutCard()}\n   item{EmergencyCard(vm)}
+   item{AboutCard()}
+   item{EmergencyCard(vm)}
    item{GuidedToolsCard(vm)}
    state.error?.let{item{Text("Erro: $it",color=MaterialTheme.colorScheme.error)}}
    state.result?.let{result->
@@ -62,7 +63,8 @@ private fun AppCard(vm:SecurityViewModel,app:InstalledAppInfo){
    Text("Instalador: ${app.installer ?: "desconhecido"}")
    if(app.accessibilityEnabled)Text("⚠ Acessibilidade ativa")
    if(app.deviceAdminActive)Text("⚠ Administrador do dispositivo ativo")
-   ActionButtons(vm,app)\n   if(app.adwareIndicators.isNotEmpty()){
+   ActionButtons(vm,app)
+   if(app.adwareIndicators.isNotEmpty()){
     Text("Indicadores de possível adware",style=MaterialTheme.typography.titleSmall)
     app.adwareIndicators.forEach{Text("• ${it.title} (+${it.points}) — ${it.detail}",style=MaterialTheme.typography.bodySmall)}
    }
