@@ -37,6 +37,7 @@ fun SecurityApp(vm:SecurityViewModel){
     val highRisk=result.apps.filter{it.riskScore>=80}
     item{HighRiskHeader(highRisk.size)}
     items(highRisk,key={it.packageName}){app->AppCard(vm,app)}
+    item{PrivateDnsCard(vm,result.privateDns)}
     item{BrowserCard(result.browsers)}
     item{MonitoringCard(result.monitoring)}
     item{ThreatIntelCard()}
@@ -78,6 +79,19 @@ private fun AppCard(vm:SecurityViewModel,app:InstalledAppInfo){
  }}
 }
 
+@Composable
+private fun PrivateDnsCard(vm:SecurityViewModel,status:PrivateDnsStatus){
+ Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
+  Text("DNS privado",style=MaterialTheme.typography.titleLarge)
+  Text("Status: "+status.state.label)
+  Text("Provedor: "+(status.provider ?: "não identificado"))
+  if(status.isAdGuard) Text("✓ AdGuard DNS identificado",style=MaterialTheme.typography.titleMedium)
+  Text(status.detail,style=MaterialTheme.typography.bodySmall)
+  Text("O DNS ajuda a bloquear domínios de anúncios, rastreadores e algumas ameaças conhecidas, mas não remove aplicativos maliciosos.",style=MaterialTheme.typography.bodySmall)
+  Button(onClick={vm.open(vm.privateDnsSettings())},modifier=Modifier.fillMaxWidth()){Text("ABRIR CONFIGURAÇÕES DE REDE")}
+ }
+ }
+}
 @Composable
 private fun MonitoringCard(status:MonitoringStatus){
  Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
