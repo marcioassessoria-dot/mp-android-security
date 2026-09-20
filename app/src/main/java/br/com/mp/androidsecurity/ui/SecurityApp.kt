@@ -36,12 +36,12 @@ Text("Correspondências de Threat Intelligence: ${r.threatMatchCount}");Text("Mo
   Text("MetaDefender Cloud: consulta por SHA-256 e, quando o hash não é conhecido, envia o APK para análise por múltiplos motores.")
   OutlinedTextField(value=state.metaDefenderApiKey,onValueChange=vm::setMetaDefenderApiKey,label={Text("API key MetaDefender")},singleLine=true,modifier=Modifier.fillMaxWidth())
   Text("A chave não é incorporada ao APK nem enviada para outro servidor pelo MP Security.",style=MaterialTheme.typography.bodySmall)
-  if(state.onlineScanningPackage!=null)Text("Analisando \${state.onlineScanningPackage} online...")
+  if(state.onlineScanningPackage!=null)Text("Analisando ${state.onlineScanningPackage} online...")
   state.onlineError?.let{Text(it,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)}
   val results=state.onlineResults
-  Text("Apps analisados online: \${results.size}")
+  Text("Apps analisados online: ${results.size}")
   results.values.takeLast(5).forEach{res->
-   Text("\${res.verdict} • \${res.detected?.toString()?:"?"}/\${res.totalEngines?.toString()?:"?"} engines",style=MaterialTheme.typography.titleMedium)
+   Text("${res.verdict} • ${res.detected?.toString()?:"?"}/${res.totalEngines?.toString()?:"?"} engines",style=MaterialTheme.typography.titleMedium)
    Text(res.details,style=MaterialTheme.typography.bodySmall)
   }
   Text("Importante: o serviço externo pode receber o APK enviado. Use apenas com uma conta/licença compatível e evite enviar arquivos com dados pessoais.",style=MaterialTheme.typography.bodySmall)
@@ -56,7 +56,7 @@ Text("Correspondências de Threat Intelligence: ${r.threatMatchCount}");Text("Mo
 if(a.threatMatches.isNotEmpty()){Text("Threat Intelligence",style=MaterialTheme.typography.titleSmall);a.threatMatches.take(3).forEach{m->Text("⚠ ${m.threatName} • ${m.confidence}% • ${m.matchedOn.joinToString(", ")}",style=MaterialTheme.typography.bodySmall)}};a.riskReasons.take(if(expanded)10 else 3).forEach{Text("• $it",style=MaterialTheme.typography.bodySmall)};TextButton(onClick={expanded=!expanded}){Text(if(expanded)"OCULTAR" else "VER ANÁLISE DO APP")};if(expanded){
  val online=state.onlineResults[a.packageName]
  Button(onClick={vm.scanOnline(a)},enabled=state.onlineScanningPackage==null,modifier=Modifier.fillMaxWidth()){Text(if(state.onlineScanningPackage==a.packageName)"ANALISANDO ONLINE..." else "VERIFICAR COM ANTIVÍRUS ONLINE")}
- online?.let{Text("Online: \${it.verdict} • \${it.detected?.toString()?:"?"}/\${it.totalEngines?.toString()?:"?"} engines");Text(it.details,style=MaterialTheme.typography.bodySmall)}
+ online?.let{Text("Online: ${it.verdict} • ${it.detected?.toString()?:"?"}/${it.totalEngines?.toString()?:"?"} engines");Text(it.details,style=MaterialTheme.typography.bodySmall)}
  Text("Versão: ${a.versionName?:"desconhecida"} (${a.versionCode})");Text("Instalador: ${a.installer?:"desconhecido"}");Text("Target SDK: ${a.targetSdk}");Text("Instalado: "+DateFormat.format("dd/MM/yyyy HH:mm",a.firstInstallTime));Text("Atualizado: "+DateFormat.format("dd/MM/yyyy HH:mm",a.lastUpdateTime));if(a.accessibilityEnabled)Text("⚠ Acessibilidade ativa");if(a.deviceAdminActive)Text("⚠ Administrador ativo");a.adwareIndicators.forEach{Text("• ${it.title}: ${it.detail}",style=MaterialTheme.typography.bodySmall)};Text("Permissões sensíveis",style=MaterialTheme.typography.titleSmall);a.requestedPermissions.forEach{p->Text("${if(p.granted)"✓" else "○"} ${p.label}")};Row{if(!a.isSystemApp)Button(onClick={vm.open(vm.uninstall(a.packageName))}){Text("DESINSTALAR")};Button(onClick={vm.open(vm.appDetails(a.packageName))}){Text("REVISAR")}}}}}}
 @Composable private fun HighRiskHeader(n:Int){Card{Column(Modifier.padding(14.dp)){Text("Aplicativos de alto risco",style=MaterialTheme.typography.titleLarge);Text("Exibindo somente pontuação heurística de 80/100 ou mais. Não é probabilidade de infecção.");Text("Encontrados: $n")}}}
 @Composable private fun BrowserCard(b:List<InstalledAppInfo>){Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(6.dp)){Text("Navegadores analisados",style=MaterialTheme.typography.titleLarge);Text("Detectados: ${b.size}");b.forEach{Text("${it.appName} • ${it.riskScore}/100 • ${it.origin.label}");Text("Permissões sensíveis concedidas: ${it.requestedPermissions.count{p->p.granted}}",style=MaterialTheme.typography.bodySmall)};Text("O Android não permite a um app comum ler histórico, cookies, senhas ou banco privado de outro navegador.",style=MaterialTheme.typography.bodySmall)}}}
