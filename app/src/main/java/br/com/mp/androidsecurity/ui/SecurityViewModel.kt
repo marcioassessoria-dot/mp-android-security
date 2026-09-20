@@ -37,7 +37,7 @@ class SecurityViewModel(a:Application):AndroidViewModel(a){
 
  fun setMetaDefenderApiKey(value:String){_state.value=_state.value.copy(metaDefenderApiKey=value,onlineError=null)}
  fun scanOnline(app:br.com.mp.androidsecurity.model.InstalledAppInfo){
-  val key=_state.value.metaDefenderApiKey
+  val key=BuildConfig.METADEFENDER_API_KEY
   if(key.isBlank()){_state.value=_state.value.copy(onlineError="Informe a API key do MetaDefender Cloud.");return}
   if(_state.value.onlineScanningPackage!=null)return
   _state.value=_state.value.copy(onlineScanningPackage=app.packageName,onlineError=null)
