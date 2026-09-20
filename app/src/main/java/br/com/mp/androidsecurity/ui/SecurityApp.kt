@@ -35,7 +35,64 @@ import br.com.mp.androidsecurity.scanner.IntelligentRiskEngine
 @Composable private fun QuickAction(icon:androidx.compose.ui.graphics.vector.ImageVector,title:String,sub:String,modifier:Modifier,onClick:()->Unit){Card(onClick=onClick,modifier=modifier,shape=RoundedCornerShape(16.dp),colors=CardDefaults.cardColors(Color(0xFFF7F9FC))){Column(Modifier.padding(10.dp),verticalArrangement=Arrangement.spacedBy(4.dp)){Icon(icon,null,tint=Color(0xFF1769E0),modifier=Modifier.size(28.dp));Text(title,fontWeight=FontWeight.Bold,style=MaterialTheme.typography.bodyMedium);Text(sub,style=MaterialTheme.typography.bodySmall)}}}
 @Composable private fun ModernDeviceCard(r:ScanResult?){Card(Modifier.padding(horizontal=14.dp),shape=RoundedCornerShape(22.dp),colors=CardDefaults.cardColors(Color.White)){Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){Text("Status do dispositivo",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);if(r==null)Text("Execute uma análise para mostrar os dados reais.") else Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){Text("Android\n"+r.diagnostics.androidVersion,Modifier.weight(1f));Text(r.diagnostics.model,Modifier.weight(1f));Text(r.diagnostics.storageFreeMb.toString()+" MB\nlivres",Modifier.weight(1f));Text(r.diagnostics.batteryPercent?.let{it.toString()+"%"}?:"—",Modifier.weight(1f))}}}}
 @Composable private fun ModernSecurityCard(vm:SecurityViewModel,r:ScanResult?){Card(Modifier.padding(horizontal=14.dp),shape=RoundedCornerShape(22.dp),colors=CardDefaults.cardColors(Color.White)){Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){Text("Segurança e rede",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(8.dp)){Text("🛡 Proteção local\n"+if(r==null)"Aguardando análise" else "Ativa",Modifier.weight(1f));Text("◎ DNS Privado\n"+(r?.privateDns?.provider?:"Não analisado"),Modifier.weight(1f))};Surface(shape=RoundedCornerShape(16.dp),color=Color(0xFFEAF3FF),modifier=Modifier.fillMaxWidth()){Row(Modifier.padding(12.dp),verticalAlignment=Alignment.CenterVertically){Icon(Icons.Default.Security,null,tint=Color(0xFF1769E0),modifier=Modifier.size(32.dp));Column(Modifier.weight(1f)){Text("Ative o AdGuard DNS",fontWeight=FontWeight.Bold);Text("Bloqueie sites maliciosos, propagandas e rastreadores.",style=MaterialTheme.typography.bodySmall)};Button(onClick={vm.open(vm.privateDnsSettings())}){Text("CONFIGURAR")}}}}}}
-@Composable private fun AiAnalysisCard(raw:String){Card(Modifier.padding(horizontal=14.dp),shape=RoundedCornerShape(22.dp),colors=CardDefaults.cardColors(Color.White)){Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(8.dp)){Text("Análise inteligente do PortalNex",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold);Text("A IA recebeu somente os resultados do scanner e não possui acesso direto ao aparelho.",style=MaterialTheme.typography.bodySmall);Text(raw,style=MaterialTheme.typography.bodyMedium)}}}
+@Composable private fun AiAnalysisCard(raw:String){
+ val parsed=remember(raw){runCatching{org.json.JSONObject(raw)}.getOrNull()}
+ Card(Modifier.padding(horizontal=14.dp),shape=RoundedCornerShape(22.dp),colors=CardDefaults.cardColors(Color.White)){
+  Column(Modifier.padding(16.dp),verticalArrangement=Arrangement.spacedBy(10.dp)){
+   Text("Análise inteligente do PortalNex",style=MaterialTheme.typography.headlineSmall,fontWeight=FontWeight.Bold)
+   Text("A IA recebeu somente os resultados do scanner e não possui acesso direto ao aparelho.",style=MaterialTheme.typography.bodySmall)
+   if(parsed==null){
+    Text(raw,style=MaterialTheme.typography.bodyMedium)
+   }else{
+    val nivel=parsed.optString("nivel","NÃO INFORMADO")
+    val confianca=parsed.optInt("confianca",-1)
+    Surface(shape=RoundedCornerShape(16.dp),color=Color(0xFFF3F6FB),modifier=Modifier.fillMaxWidth()){
+     Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){
+      Text("Nível: $nivel",fontWeight=FontWeight.Bold,style=MaterialTheme.typography.titleMedium)
+      if(confianca>=0)Text("Confiança da análise: $confianca%")
+     }
+    }
+    val resumo=parsed.optString("resumo","")
+    if(resumo.isNotBlank()){Text("Resumo",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold);Text(resumo)}
+    val ameacas=parsed.optJSONArray("ameacas")
+    if(ameacas!=null&&ameacas.length()>0){
+     Text("Ameaças / indicadores",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
+     for(i in 0 until ameacas.length()){
+      val item=ameacas.optJSONObject(i)?:continue
+      val nome=item.optString("nome","Indicador")
+      val tipo=item.optString("tipo","")
+      val severidade=item.optString("severidade","")
+      val motivo=item.optString("motivo","")
+      Surface(shape=RoundedCornerShape(14.dp),color=Color(0xFFF8F9FC),modifier=Modifier.fillMaxWidth()){
+       Column(Modifier.padding(12.dp),verticalArrangement=Arrangement.spacedBy(3.dp)){
+        Text(nome,fontWeight=FontWeight.Bold)
+        if(tipo.isNotBlank()||severidade.isNotBlank())Text(listOf(tipo,severidade).filter{it.isNotBlank()}.joinToString(" • "),style=MaterialTheme.typography.bodySmall)
+        if(motivo.isNotBlank())Text(motivo,style=MaterialTheme.typography.bodySmall)
+       }
+      }
+     }
+    }
+    AiStringListSection("Evidências",parsed.optJSONArray("evidencias"))
+    AiStringListSection("Ações recomendadas",parsed.optJSONArray("acoes_recomendadas"))
+    val verificacao=parsed.optString("verificacao_pos_remocao","")
+    if(verificacao.isNotBlank()){
+     Text("Verificação pós-remoção",style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
+     Surface(shape=RoundedCornerShape(14.dp),color=Color(0xFFF3F6FB),modifier=Modifier.fillMaxWidth()){Text(verificacao,Modifier.padding(12.dp))}
+    }
+   }
+  }
+ }
+}
+@Composable private fun AiStringListSection(title:String,array:org.json.JSONArray?){
+ if(array==null||array.length()==0)return
+ Column(verticalArrangement=Arrangement.spacedBy(5.dp)){
+  Text(title,style=MaterialTheme.typography.titleMedium,fontWeight=FontWeight.Bold)
+  for(i in 0 until array.length()){
+   val value=array.optString(i,"").trim()
+   if(value.isNotBlank())Text("• $value",style=MaterialTheme.typography.bodyMedium)
+  }
+ }
+}
 @Composable private fun InfoCard(t:String,b:String){Card(Modifier.padding(horizontal=14.dp)){Column(Modifier.padding(16.dp)){Text(t,style=MaterialTheme.typography.titleLarge,fontWeight=FontWeight.Bold);Text(b)}}}
 @Composable private fun QuickActions(vm:SecurityViewModel,result:ScanResult?,events:List<NetworkBlockEvent>,launcher:androidx.activity.result.ActivityResultLauncher<android.content.Intent>){Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){Text("Ações rápidas",style=MaterialTheme.typography.titleLarge);Button(onClick=vm::scan,modifier=Modifier.fillMaxWidth()){Text("DIAGNÓSTICO RÁPIDO")};if(result!=null)Button(onClick={vm.shareReport(result,events)},modifier=Modifier.fillMaxWidth()){Text("GERAR RELATÓRIO PDF")};Button(onClick={vm.open(vm.accessibilitySettings())},modifier=Modifier.fillMaxWidth()){Text("REVISAR ACESSIBILIDADE")};Button(onClick={vm.open(vm.deviceAdminSettings())},modifier=Modifier.fillMaxWidth()){Text("REVISAR ADMINISTRADORES")}}}}
 @Composable private fun SummaryCard(r:ScanResult){Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){Text("Resumo",style=MaterialTheme.typography.titleLarge);Text("Aplicativos: ${r.apps.size}");Text("Risco ≥80: ${r.highRiskCount} • Suspeitos: ${r.suspiciousCount}");Text("Atenção: ${r.attentionCount} • Baixo: ${r.lowRiskCount}");Text("Possível adware: ${r.possibleAdwareCount} • Alto indício: ${r.highAdwareCount}");Text("Acessibilidade: ${r.accessibility.size} • Administradores: ${r.deviceAdmins.size}")
