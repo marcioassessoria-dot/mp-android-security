@@ -39,7 +39,7 @@ Text("Correspondências de Threat Intelligence: ${r.threatMatchCount}");Text("Mo
   if(state.onlineScanningPackage!=null)Text("Analisando ${state.onlineScanningPackage} online...")
   state.onlineError?.let{Text(it,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)}
   val results=state.onlineResults
-  Text("Apps analisados online: ${results.size}")
+  Button(onClick={vm::scanOnlineAll},enabled=state.onlineScanningPackage==null,modifier=Modifier.fillMaxWidth()){Text(if(state.onlineScanningPackage!=null)"ESCANEANDO..." else "SCANEAR AGORA")}\n  Text("Apps analisados online: ${results.size}")
   results.values.toList().takeLast(5).forEach{res: br.com.mp.androidsecurity.scanner.OnlineScanResult ->
    Text("${res.verdict} • ${res.detected?.toString()?:"?"}/${res.totalEngines?.toString()?:"?"} engines",style=MaterialTheme.typography.titleMedium)
    Text(res.details,style=MaterialTheme.typography.bodySmall)
