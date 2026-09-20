@@ -4,9 +4,13 @@ import android.content.pm.ApplicationInfo
 import android.content.pm.PackageManager
 import android.os.Build
 import br.com.mp.androidsecurity.model.*
+import java.security.MessageDigest
+import java.io.FileInputStream
+import java.security.DigestInputStream
+
 class InstalledAppsScanner(private val c:Context){
  private val pm=c.packageManager
- fun scan(acc:Set<String>,admins:Set<String>): List<InstalledAppInfo> =pm.getInstalledPackages(PackageManager.GET_PERMISSIONS).mapNotNull{pkg->
+ fun scan(acc:Set<String>,admins:Set<String>,threats:List<ThreatIntel> = emptyList()): List<InstalledAppInfo> = pm.getInstalledPackages(PackageManager.GET_PERMISSIONS).mapNotNull{pkg->
   val ai=pkg.applicationInfo?:return@mapNotNull null
   val allRequested=pkg.requestedPermissions.orEmpty().toList()
   val requested=allRequested.filter(RiskEngine::isSensitive)
@@ -15,18 +19,27 @@ class InstalledAppsScanner(private val c:Context){
   val accessibility=pkg.packageName in acc
   val admin=pkg.packageName in admins
   val isSystem=(ai.flags and ApplicationInfo.FLAG_SYSTEM)!=0
-  val origin=when {
-   !isSystem -> AppOrigin.USER_INSTALLED
-   pkg.packageName=="android" || pkg.packageName.startsWith("com.android.") -> AppOrigin.ANDROID_CORE
-   else -> AppOrigin.SYSTEM_PREINSTALLED
-  }
-  val score=if(isSystem) (if(accessibility) 10 else 0)+(if(admin) 10 else 0) else RiskEngine.score(requested,granted,accessibility,admin)
+  val origin=when{!isSystem->AppOrigin.USER_INSTALLED;pkg.packageName=="android"||pkg.packageName.startsWith("com.android.")->AppOrigin.ANDROID_CORE;else->AppOrigin.SYSTEM_PREINSTALLED}
+  val score=if(isSystem)(if(accessibility)10 else 0)+(if(admin)10 else 0) else RiskEngine.score(requested,granted,accessibility,admin)
   val installer=runCatching{if(Build.VERSION.SDK_INT>=30)pm.getInstallSourceInfo(pkg.packageName).installingPackageName else @Suppress("DEPRECATION") pm.getInstallerPackageName(pkg.packageName)}.getOrNull()
   val adIndicators=if(isSystem) emptyList() else RiskEngine.adwareIndicators(allRequested,granted,accessibility,installer,pkg.firstInstallTime,false)
-  val adScore=if(isSystem) 0 else RiskEngine.adwareScore(adIndicators,granted,accessibility)
+  val adScore=if(isSystem)0 else RiskEngine.adwareScore(adIndicators,granted,accessibility)
   val adLevel=RiskEngine.adwareLevel(adScore,adIndicators)
   val versionCode=if(Build.VERSION.SDK_INT>=28)pkg.longVersionCode else @Suppress("DEPRECATION") pkg.versionCode.toLong()
-  val reasons=if(isSystem) buildList { if(accessibility) add("Serviço de acessibilidade ativo") ; if(admin) add("Administrador do dispositivo ativo") } else (RiskEngine.reasons(requested,granted,accessibility,admin)+when(adLevel){AdwareLevel.HIGH->listOf("Possível adware: combinação de múltiplos indicadores");AdwareLevel.POSSIBLE->listOf("Indícios de possível adware: investigar os indicadores");else->emptyList()}).distinct()
-  InstalledAppInfo(pkg.packageName,ai.loadLabel(pm).toString(),pkg.versionName,versionCode,ai.targetSdkVersion,isSystem,origin,ai.enabled,installer,pkg.firstInstallTime,pkg.lastUpdateTime,findings,accessibility,admin,reasons,score,RiskEngine.level(score),adIndicators,adScore,adLevel)
+  val cert=runCatching{SigningDigest.sha256(pkg)}.getOrNull()
+  val apkHash=runCatching {
+   val digest=MessageDigest.getInstance("SHA-256")
+   DigestInputStream(FileInputStream(ai.sourceDir),digest).use { input ->
+    val buffer=ByteArray(8192)
+    while(input.read(buffer)!=-1){}
+   }
+   digest.digest().joinToString(""){"%02x".format(it)}
+  }.getOrNull()
+  val reasons=if(isSystem)buildList{if(accessibility)add("Serviço de acessibilidade ativo");if(admin)add("Administrador do dispositivo ativo")}else(RiskEngine.reasons(requested,granted,accessibility,admin)+when(adLevel){AdwareLevel.HIGH->listOf("Possível adware: combinação de múltiplos indicadores");AdwareLevel.POSSIBLE->listOf("Indícios de possível adware: investigar os indicadores");else->emptyList()}).distinct()
+  InstalledAppInfo(pkg.packageName,ai.loadLabel(pm).toString(),pkg.versionName,versionCode,ai.targetSdkVersion,isSystem,origin,ai.enabled,installer,pkg.firstInstallTime,pkg.lastUpdateTime,findings,accessibility,admin,cert,apkHash,reasons,score,RiskEngine.level(score),adIndicators,adScore,adLevel).let{base->
+   val matches=ThreatCorrelationEngine.correlate(base,threats)
+   val ts=RiskEngine.threatScore(matches)
+   base.copy(threatMatches=matches,riskReasons=(base.riskReasons+RiskEngine.threatReasons(matches)).distinct(),riskScore=(base.riskScore+ts).coerceAtMost(100),riskLevel=RiskEngine.level((base.riskScore+ts).coerceAtMost(100)))
+  }
  }.sortedByDescending{it.riskScore}
 }
