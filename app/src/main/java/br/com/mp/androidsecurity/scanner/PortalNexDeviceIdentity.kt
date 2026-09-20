@@ -1,8 +1,6 @@
 package br.com.mp.androidsecurity.scanner
 
 import android.content.Context
-import android.os.Build
-import br.com.mp.androidsecurity.BuildConfig
 import java.nio.charset.StandardCharsets
 import java.security.KeyPair
 import java.security.KeyPairGenerator
@@ -11,7 +9,6 @@ import java.security.Signature
 import java.security.spec.ECGenParameterSpec
 import java.util.Base64
 import java.util.UUID
-import javax.crypto.Mac
 
 class PortalNexDeviceIdentity(context: Context) {
     companion object {
