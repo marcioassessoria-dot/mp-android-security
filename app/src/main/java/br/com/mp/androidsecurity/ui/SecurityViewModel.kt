@@ -17,12 +17,13 @@ import br.com.mp.androidsecurity.model.ScanResult
 import br.com.mp.androidsecurity.scanner.LocalSecurityScanner
 import br.com.mp.androidsecurity.scanner.MetaDefenderScanner
 import br.com.mp.androidsecurity.scanner.OnlineScanResult
+import br.com.mp.androidsecurity.scanner.PortalNexAiClient
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-data class SecurityUiState(val scanning:Boolean=false,val result:ScanResult?=null,val error:String?=null,val onlineScanningPackage:String?=null,val onlineResults:Map<String,OnlineScanResult> = emptyMap(),val onlineError:String?=null,val metaDefenderApiKey:String="",val removalSession:br.com.mp.androidsecurity.model.RemovalSession?=null,val removalRunning:Boolean=false,val removalMessage:String?=null)
+data class SecurityUiState(val scanning:Boolean=false,val result:ScanResult?=null,val error:String?=null,val onlineScanningPackage:String?=null,val onlineResults:Map<String,OnlineScanResult> = emptyMap(),val onlineError:String?=null,val metaDefenderApiKey:String="",val removalSession:br.com.mp.androidsecurity.model.RemovalSession?=null,val removalRunning:Boolean=false,val removalMessage:String?=null,val aiRunning:Boolean=false,val aiAnalysis:String?=null,val aiError:String?=null)
 
 class SecurityViewModel(a:Application):AndroidViewModel(a){
  private val threatRepo=ThreatIntelRepository(a)
@@ -30,6 +31,7 @@ class SecurityViewModel(a:Application):AndroidViewModel(a){
  val threatIntel:StateFlow<ThreatIntelState> = _threatIntel
  private val _state=MutableStateFlow(SecurityUiState());val state:StateFlow<SecurityUiState> = _state
  private val onlineScanner=MetaDefenderScanner(a)
+ private val portalNexAi=PortalNexAiClient()
 
  init{ThreatIntelWorker.schedule(a);syncThreatIntel()}
 
@@ -59,6 +61,19 @@ class SecurityViewModel(a:Application):AndroidViewModel(a){
     }
    }
    _state.value=_state.value.copy(onlineScanningPackage=null)
+  }
+ }
+ fun analyzeWithPortalNexAi(){
+  val result=_state.value.result ?: run { scan(); return }
+  if(_state.value.aiRunning)return
+  _state.value=_state.value.copy(aiRunning=true,aiError=null)
+  viewModelScope.launch(Dispatchers.IO){
+   try{
+    val analysis=portalNexAi.analyze(result)
+    _state.value=_state.value.copy(aiRunning=false,aiAnalysis=analysis)
+   }catch(t:Throwable){
+    _state.value=_state.value.copy(aiRunning=false,aiError=t.message?:"Falha na análise por IA")
+   }
   }
  }
  fun startRemoval(app:br.com.mp.androidsecurity.model.InstalledAppInfo){
