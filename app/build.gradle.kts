@@ -12,7 +12,7 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.1"
-        buildConfigField("String", "METADEFENDER_API_KEY", ""${System.getenv("METADEFENDER_API_KEY") ?: ""}"")
+        buildConfigField("String", "METADEFENDER_API_KEY", "\"${System.getenv("METADEFENDER_API_KEY") ?: ""}\"")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
