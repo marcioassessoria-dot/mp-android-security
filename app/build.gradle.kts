@@ -18,7 +18,7 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true; buildConfig = true }
+    buildFeatures { compose = true; buildConfig = true }\n    defaultConfig {\n        buildConfigField("String", "METADEFENDER_API_KEY", "\"${System.getenv("METADEFENDER_API_KEY") ?: ""}\"")\n    }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     lint { abortOnError = true; checkReleaseBuilds = true }
 }
