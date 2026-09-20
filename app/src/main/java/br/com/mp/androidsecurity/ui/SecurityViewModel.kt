@@ -115,7 +115,7 @@ class SecurityViewModel(a:Application):AndroidViewModel(a){
  fun appDetails(p:String)=intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:$p"))
  fun uninstall(p:String)=intent(Intent.ACTION_DELETE,Uri.parse("package:$p"))
  fun notificationSettings(p:String)=intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).apply{putExtra(Settings.EXTRA_APP_PACKAGE,p);addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)}
- fun accessibilitySettings()=intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);fun deviceAdminSettings()=intent("android.settings.SECURITY_SETTINGS");fun emergencySettings()=intent(Settings.ACTION_SETTINGS);fun safeModeSettings()=intent(Settings.ACTION_SETTINGS);fun privateDnsSettings()=if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.P) intent(Settings.ACTION_PRIVATE_DNS_SETTINGS) else intent(Settings.ACTION_WIRELESS_SETTINGS)
+ fun accessibilitySettings()=intent(Settings.ACTION_ACCESSIBILITY_SETTINGS);fun deviceAdminSettings()=intent("android.settings.SECURITY_SETTINGS");fun emergencySettings()=intent(Settings.ACTION_SETTINGS);fun safeModeSettings()=intent(Settings.ACTION_SETTINGS);fun privateDnsSettings()=if(Build.VERSION.SDK_INT>=Build.VERSION_CODES.P) intent("android.settings.PRIVATE_DNS_SETTINGS") else intent(Settings.ACTION_WIRELESS_SETTINGS)
  fun adGuardDnsHost()="dns.adguard.com"
  fun adGuardDnsConfigured()=false
  fun vpnPrepare():Intent?=VpnService.prepare(getApplication<Application>())
