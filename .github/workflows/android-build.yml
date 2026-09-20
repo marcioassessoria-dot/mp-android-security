@@ -36,6 +36,8 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
 
       - name: Build debug APK
+        env:
+          METADEFENDER_API_KEY: ${{ secrets.METADEFENDER_API_KEY }}
         run: gradle :app:assembleDebug --stacktrace
 
       - name: Upload APK
