@@ -12,13 +12,14 @@ android {
         targetSdk = 35
         versionCode = 1
         versionName = "1.0.1"
+        buildConfigField("String", "METADEFENDER_API_KEY", ""${System.getenv("METADEFENDER_API_KEY") ?: ""}"")
     }
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
     kotlinOptions { jvmTarget = "17" }
-    buildFeatures { compose = true; buildConfig = true }\n    defaultConfig {\n        applicationId = "br.com.mp.androidsecurity"\n        minSdk = 26\n        targetSdk = 35\n        versionCode = 1\n        versionName = "1.0.1"\n        buildConfigField("String", "METADEFENDER_API_KEY", "\"${System.getenv("METADEFENDER_API_KEY") ?: ""}\"")\n    }
+    buildFeatures { compose = true; buildConfig = true }
     packaging { resources.excludes += "/META-INF/{AL2.0,LGPL2.1}" }
     lint { abortOnError = true; checkReleaseBuilds = true }
 }
