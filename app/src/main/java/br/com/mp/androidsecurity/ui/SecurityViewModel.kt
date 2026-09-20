@@ -15,23 +15,34 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import br.com.mp.androidsecurity.model.ScanResult
 import br.com.mp.androidsecurity.scanner.LocalSecurityScanner
+import br.com.mp.androidsecurity.scanner.MetaDefenderScanner
+import br.com.mp.androidsecurity.scanner.OnlineScanResult
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-data class SecurityUiState(val scanning:Boolean=false,val result:ScanResult?=null,val error:String?=null)
+data class SecurityUiState(val scanning:Boolean=false,val result:ScanResult?=null,val error:String?=null,val onlineScanningPackage:String?=null,val onlineResults:Map<String,OnlineScanResult> = emptyMap(),val onlineError:String?=null,val metaDefenderApiKey:String="")
 
 class SecurityViewModel(a:Application):AndroidViewModel(a){
  private val threatRepo=ThreatIntelRepository(a)
  private val _threatIntel=MutableStateFlow(threatRepo.cachedState())
  val threatIntel:StateFlow<ThreatIntelState> = _threatIntel
  private val _state=MutableStateFlow(SecurityUiState());val state:StateFlow<SecurityUiState> = _state
+ private val onlineScanner=MetaDefenderScanner(a)
 
  init{ThreatIntelWorker.schedule(a);syncThreatIntel()}
 
  fun syncThreatIntel(){if(_threatIntel.value.syncing)return;_threatIntel.value=_threatIntel.value.copy(syncing=true,error=null);viewModelScope.launch(Dispatchers.IO){val r=threatRepo.sync();_threatIntel.value=r.copy(syncing=false)}}
 
+ fun setMetaDefenderApiKey(value:String){_state.value=_state.value.copy(metaDefenderApiKey=value,onlineError=null)}
+ fun scanOnline(app:br.com.mp.androidsecurity.model.InstalledAppInfo){
+  val key=_state.value.metaDefenderApiKey
+  if(key.isBlank()){_state.value=_state.value.copy(onlineError="Informe a API key do MetaDefender Cloud.");return}
+  if(_state.value.onlineScanningPackage!=null)return
+  _state.value=_state.value.copy(onlineScanningPackage=app.packageName,onlineError=null)
+  viewModelScope.launch(Dispatchers.IO){try{val result=onlineScanner.scanInstalledApp(app,key);_state.value=_state.value.copy(onlineScanningPackage=null,onlineResults=_state.value.onlineResults+(app.packageName to result))}catch(t:Throwable){_state.value=_state.value.copy(onlineScanningPackage=null,onlineError=t.message?: "Falha no scanner online")}}
+ }
  fun scan(){if(_state.value.scanning)return;_state.value=_state.value.copy(scanning=true,error=null);viewModelScope.launch(Dispatchers.Default){try{_state.value=SecurityUiState(result=LocalSecurityScanner(getApplication<Application>()).scan())}catch(t:Throwable){_state.value=SecurityUiState(error=t.message)}}}
  fun open(intent:Intent){getApplication<Application>().startActivity(intent)}
  private fun intent(action:String,uri:Uri?=null)=Intent(action).apply{if(uri!=null)data=uri;addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)}
