@@ -21,7 +21,7 @@ import br.com.mp.androidsecurity.scanner.IntelligentRiskEngine
   item{AboutCard()}
   state.error?.let{item{Text("Erro: "+it,color=MaterialTheme.colorScheme.error)}}
   state.result?.let{r->
-   item{SummaryCard(r)};item{OnlineScannerCard(vm,r)};item{DiagnosticsCard(r.diagnostics)};item{PrivateDnsCard(vm,r.privateDns)};item{NetworkProtectionCard(vm,launcher,events)};item{MonitoringCard(r.monitoring)};item{AdwareRemovalAssistant(vm,r)}
+   item{SummaryCard(r)};item{OnlineScannerCard(vm,r)};item{RemovalWorkflowCard(vm,state)};item{DiagnosticsCard(r.diagnostics)};item{PrivateDnsCard(vm,r.privateDns)};item{NetworkProtectionCard(vm,launcher,events)};item{MonitoringCard(r.monitoring)};item{AdwareRemovalAssistant(vm,r)}
    val high=r.apps.filter{IntelligentRiskEngine.evaluate(it,state.onlineResults[it.packageName]).score>=80};item{HighRiskHeader(high.size)};items(high,key={it.packageName}){AppCard(vm,it)}
    item{BrowserCard(r.browsers)};item{ThreatIntelCard(vm,threatIntel)}
   }
@@ -45,6 +45,35 @@ Text("Correspondências de Threat Intelligence: ${r.threatMatchCount}");Text("Mo
    Text(res.details,style=MaterialTheme.typography.bodySmall)
   }
   Text("Importante: o serviço externo pode receber o APK enviado. Use apenas com uma conta/licença compatível e evite enviar arquivos com dados pessoais.",style=MaterialTheme.typography.bodySmall)
+ }}
+}
+@Composable private fun RemovalWorkflowCard(vm:SecurityViewModel,state:SecurityUiState){
+ val session=state.removalSession ?: return
+ Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
+  Text("Remoção assistida",style=MaterialTheme.typography.titleLarge)
+  Text("Alvo: \${session.targetAppName}")
+  Text("Pacote: \${session.targetPackage}",style=MaterialTheme.typography.bodySmall)
+  Text("A sessão preserva a análise inicial para comparação com a nova análise.")
+  if(session.after==null){
+   Button(onClick={vm.markRemovalAction("REVISAR_CONFIGURACOES")},modifier=Modifier.fillMaxWidth()){Text("REGISTRAR REVISÃO")}
+   Button(onClick={vm.markRemovalAction("ABRIR_DESINSTALACAO")},modifier=Modifier.fillMaxWidth()){Text("REGISTRAR TENTATIVA DE REMOÇÃO")}
+   Button(onClick=vm::scanAfterRemoval,enabled=!state.removalRunning,modifier=Modifier.fillMaxWidth()){Text(if(state.removalRunning)"ANALISANDO..." else "NOVA ANÁLISE PÓS-REMOÇÃO")}
+  }else{
+   val before=session.before
+   val after=session.after
+   val b=before.apps.find{it.packageName==session.targetPackage}
+   val a=after.apps.find{it.packageName==session.targetPackage}
+   Text("Comparação antes × depois",style=MaterialTheme.typography.titleMedium)
+   Text("Aplicativo alvo: \${if(a==null)"não encontrado após a análise" else "ainda instalado"}")
+   Text("Alto risco: \${before.highRiskCount} → \${after.highRiskCount}")
+   Text("Threat Intelligence: \${before.threatMatchCount} → \${after.threatMatchCount}")
+   Text("Adware: \${before.possibleAdwareCount} → \${after.possibleAdwareCount}")
+   Text("Risco do alvo: \${b?.riskScore?.toString()?:"—"} → \${a?.riskScore?.toString()?:"removido/não encontrado"}")
+   Text("Ações registradas: \${session.actions.size}")
+   session.actions.forEach{Text("• \${it.action} — \${DateFormat.format("dd/MM/yyyy HH:mm",it.timestamp)}",style=MaterialTheme.typography.bodySmall)}
+   Button(onClick=vm::clearRemovalSession,modifier=Modifier.fillMaxWidth()){Text("ENCERRAR SESSÃO")}
+  }
+  state.removalMessage?.let{Text(it,style=MaterialTheme.typography.bodySmall)}
  }}
 }
 @Composable private fun DiagnosticsCard(d:DeviceDiagnostics){Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(5.dp)){Text("Saúde do dispositivo",style=MaterialTheme.typography.titleLarge);Text("${d.manufacturer} ${d.model} • Android ${d.androidVersion} / SDK ${d.sdk}");Text("Patch de segurança: ${d.securityPatch?:"não identificado"}");Text("RAM total: ${d.ramMb} MB");Text("Armazenamento: ${d.storageFreeMb} MB livres de ${d.storageTotalMb} MB");Text("Bateria: ${d.batteryPercent?.let{"$it%"}?:"não identificado"} • ${if(d.charging==true)"carregando" else "não carregando"}");Text("VPN: ${if(d.vpnActive)"ativa" else "não ativa"} • ADB: ${if(d.adbEnabled)"ativo" else "desativado"}");Text("Opções de desenvolvedor: ${if(d.developerOptions)"ativas" else "desativadas"}")}}}
