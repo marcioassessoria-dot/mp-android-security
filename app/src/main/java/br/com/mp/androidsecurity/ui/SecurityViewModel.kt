@@ -22,7 +22,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.launch
 
-data class SecurityUiState(val scanning:Boolean=false,val result:ScanResult?=null,val error:String?=null,val onlineScanningPackage:String?=null,val onlineResults:Map<String,OnlineScanResult> = emptyMap(),val onlineError:String?=null,val metaDefenderApiKey:String="")
+data class SecurityUiState(val scanning:Boolean=false,val result:ScanResult?=null,val error:String?=null,val onlineScanningPackage:String?=null,val onlineResults:Map<String,OnlineScanResult> = emptyMap(),val onlineError:String?=null,val metaDefenderApiKey:String="",val removalSession:br.com.mp.androidsecurity.model.RemovalSession?=null,val removalRunning:Boolean=false,val removalMessage:String?=null)
 
 class SecurityViewModel(a:Application):AndroidViewModel(a){
  private val threatRepo=ThreatIntelRepository(a)
@@ -61,6 +61,28 @@ class SecurityViewModel(a:Application):AndroidViewModel(a){
    _state.value=_state.value.copy(onlineScanningPackage=null)
   }
  }
+ fun startRemoval(app:br.com.mp.androidsecurity.model.InstalledAppInfo){
+  val before=_state.value.result ?: return
+  _state.value=_state.value.copy(removalSession=br.com.mp.androidsecurity.model.RemovalSession(System.currentTimeMillis(),app.packageName,app.appName,before),removalMessage="Sessão de remoção iniciada. Revise o aplicativo e confirme a desinstalação pelo Android.")
+ }
+ fun markRemovalAction(action:String){
+  val s=_state.value.removalSession ?: return
+  _state.value=_state.value.copy(removalSession=s.copy(actions=s.actions+br.com.mp.androidsecurity.model.RemovalAction(s.targetPackage,s.targetAppName,action,System.currentTimeMillis())))
+ }
+ fun scanAfterRemoval(){
+  val s=_state.value.removalSession ?: return
+  if(_state.value.removalRunning)return
+  _state.value=_state.value.copy(removalRunning=true,removalMessage="Executando nova análise para comparar antes e depois...")
+  viewModelScope.launch(Dispatchers.Default){
+   try{
+    val after=LocalSecurityScanner(getApplication<Application>()).scan()
+    val exists=after.apps.any{it.packageName==s.targetPackage}
+    val msg=if(exists)"O aplicativo ainda está instalado. Verifique a remoção e repita a análise." else "O aplicativo alvo não foi encontrado na nova análise."
+    _state.value=_state.value.copy(removalRunning=false,removalSession=s.copy(after=after),removalMessage=msg)
+   }catch(t:Throwable){_state.value=_state.value.copy(removalRunning=false,removalMessage=t.message?:"Falha na análise pós-remoção")}
+  }
+ }
+ fun clearRemovalSession(){_state.value=_state.value.copy(removalSession=null,removalMessage=null)}
  fun scan(){if(_state.value.scanning)return;_state.value=_state.value.copy(scanning=true,error=null);viewModelScope.launch(Dispatchers.Default){try{_state.value=SecurityUiState(result=LocalSecurityScanner(getApplication<Application>()).scan())}catch(t:Throwable){_state.value=SecurityUiState(error=t.message)}}}
  fun open(intent:Intent){getApplication<Application>().startActivity(intent)}
  private fun intent(action:String,uri:Uri?=null)=Intent(action).apply{if(uri!=null)data=uri;addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)}
