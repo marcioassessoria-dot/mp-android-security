@@ -153,7 +153,7 @@ class MetaDefenderScanner(private val context: Context) {
             BufferedInputStream(file.inputStream()).use { input -> input.copyTo(out) }
             out.writeBytes("\r\n--" + boundary + "--\r\n")
         }
-        return try { HttpResult(c.responseCode, readBody(c)) } finally { c.disconnect() }
+        return try { HttpResult(c.responseCode, readBody(c), c.headerFields.filterKeys { it != null }) } finally { c.disconnect() }
     }
 
     private fun readBody(c: HttpURLConnection): String {
