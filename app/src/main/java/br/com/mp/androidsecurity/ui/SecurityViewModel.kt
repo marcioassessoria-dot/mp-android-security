@@ -43,7 +43,25 @@ class SecurityViewModel(a:Application):AndroidViewModel(a){
   _state.value=_state.value.copy(onlineScanningPackage=app.packageName,onlineError=null)
   viewModelScope.launch(Dispatchers.IO){try{val result=onlineScanner.scanInstalledApp(app,key);_state.value=_state.value.copy(onlineScanningPackage=null,onlineResults=_state.value.onlineResults+(app.packageName to result))}catch(t:Throwable){_state.value=_state.value.copy(onlineScanningPackage=null,onlineError=t.message?: "Falha no scanner online")}}
  }
- fun scanOnlineAll(){\n  val result=_state.value.result ?: run { scan(); return }\n  val key=_state.value.metaDefenderApiKey\n  if(key.isBlank()){_state.value=_state.value.copy(onlineError="Configure a chave do scanner online.");return}\n  if(_state.value.onlineScanningPackage!=null)return\n  viewModelScope.launch(Dispatchers.IO){\n   for(app in result.apps.filter{!it.isSystemApp}){\n    _state.value=_state.value.copy(onlineScanningPackage=app.packageName,onlineError=null)\n    try{val online=onlineScanner.scanInstalledApp(app,key);_state.value=_state.value.copy(onlineResults=_state.value.onlineResults+(app.packageName to online))}\n    catch(t:Throwable){_state.value=_state.value.copy(onlineError=t.message?: "Falha na análise online")}\n   }\n   _state.value=_state.value.copy(onlineScanningPackage=null)\n  }\n }\n fun scan(){if(_state.value.scanning)return;_state.value=_state.value.copy(scanning=true,error=null);viewModelScope.launch(Dispatchers.Default){try{_state.value=SecurityUiState(result=LocalSecurityScanner(getApplication<Application>()).scan())}catch(t:Throwable){_state.value=SecurityUiState(error=t.message)}}}
+ fun scanOnlineAll(){
+  val result=_state.value.result ?: run { scan(); return }
+  val key=BuildConfig.METADEFENDER_API_KEY
+  if(key.isBlank()){_state.value=_state.value.copy(onlineError="Scanner online não configurado no build.");return}
+  if(_state.value.onlineScanningPackage!=null)return
+  viewModelScope.launch(Dispatchers.IO){
+   for(app in result.apps.filter{!it.isSystemApp}){
+    _state.value=_state.value.copy(onlineScanningPackage=app.packageName,onlineError=null)
+    try{
+     val online=onlineScanner.scanInstalledApp(app,key)
+     _state.value=_state.value.copy(onlineResults=_state.value.onlineResults+(app.packageName to online))
+    }catch(t:Throwable){
+     _state.value=_state.value.copy(onlineError=t.message?: "Falha na análise online")
+    }
+   }
+   _state.value=_state.value.copy(onlineScanningPackage=null)
+  }
+ }
+ fun scan(){if(_state.value.scanning)return;_state.value=_state.value.copy(scanning=true,error=null);viewModelScope.launch(Dispatchers.Default){try{_state.value=SecurityUiState(result=LocalSecurityScanner(getApplication<Application>()).scan())}catch(t:Throwable){_state.value=SecurityUiState(error=t.message)}}}
  fun open(intent:Intent){getApplication<Application>().startActivity(intent)}
  private fun intent(action:String,uri:Uri?=null)=Intent(action).apply{if(uri!=null)data=uri;addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)}
  fun appDetails(p:String)=intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:$p"))
