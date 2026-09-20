@@ -22,10 +22,10 @@ object IntelligentRiskEngine {
         val onlineScore = onlineComponent(online)
         val score = ((local * 0.60) + (permissionRisk * 0.10) + (onlineScore * 0.30)).toInt().coerceIn(0, 100)
         val reasons = buildList {
-            add("Risco local: \${local}/100")
-            add("Permissões sensíveis concedidas: \${app.requestedPermissions.count { it.granted }} de \${app.requestedPermissions.size}")
+            add("Risco local: ${local}/100")
+            add("Permissões sensíveis concedidas: ${app.requestedPermissions.count { it.granted }} de ${app.requestedPermissions.size}")
             if (online != null) {
-                add("MetaDefender: \${online.detected ?: "?"}/\${online.totalEngines ?: "?"} detecções")
+                add("MetaDefender: ${online.detected ?: "?"}/${online.totalEngines ?: "?"} detecções")
                 when (online.verdict) {
                     "AMEAÇA_DETECTADA" -> add("MetaDefender classificou o APK como ameaça")
                     "SUSPEITO" -> add("MetaDefender classificou o APK como suspeito")
