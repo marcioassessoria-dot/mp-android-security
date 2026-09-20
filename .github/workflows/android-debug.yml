@@ -36,6 +36,8 @@ jobs:
           gradle-version: "8.10.2"
 
       - name: Build debug APK
+        env:
+          METADEFENDER_API_KEY: ${{ secrets.METADEFENDER_API_KEY }}
         run: gradle assembleDebug --stacktrace
 
       - name: Verify APK
@@ -52,6 +54,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v1.0.1"
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG"             --title "MP Android Security v1.0.1"             --notes "Scanner online MetaDefender, diagnóstico local e proteção guiada para Android."
+          TAG="v1.0.2"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG"             --title "MP Android Security v1.0.2"             --notes "Scanner online MetaDefender configurado, correção do DNS privado, diagnóstico local e proteção guiada para Android."
           gh release upload "$TAG" app/build/outputs/apk/debug/app-debug.apk --clobber
