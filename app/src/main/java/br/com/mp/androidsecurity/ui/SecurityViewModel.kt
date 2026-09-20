@@ -100,7 +100,15 @@ class SecurityViewModel(a:Application):AndroidViewModel(a){
  }
  fun clearRemovalSession(){_state.value=_state.value.copy(removalSession=null,removalMessage=null)}
  fun scan(){if(_state.value.scanning)return;_state.value=_state.value.copy(scanning=true,error=null);viewModelScope.launch(Dispatchers.Default){try{_state.value=SecurityUiState(result=LocalSecurityScanner(getApplication<Application>()).scan())}catch(t:Throwable){_state.value=SecurityUiState(error=t.message)}}}
- fun open(intent:Intent){\n  val context=getApplication<Application>()\n  try{\n   val pm=context.packageManager\n   if(intent.resolveActivity(pm)!=null){context.startActivity(intent);return}\n   val fallback=intent(Settings.ACTION_SETTINGS)\n   if(fallback.resolveActivity(pm)!=null){context.startActivity(fallback);return}\n  }catch(_:android.content.ActivityNotFoundException){}catch(_:SecurityException){}\n }
+ fun open(intent:Intent){
+  val context=getApplication<Application>()
+  try{
+   val pm=context.packageManager
+   if(intent.resolveActivity(pm)!=null){context.startActivity(intent);return}
+   val fallback=intent(Settings.ACTION_SETTINGS)
+   if(fallback.resolveActivity(pm)!=null){context.startActivity(fallback);return}
+  }catch(_:android.content.ActivityNotFoundException){}catch(_:SecurityException){}
+ }
  private fun intent(action:String,uri:Uri?=null)=Intent(action).apply{if(uri!=null)data=uri;addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)}
  fun appDetails(p:String)=intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,Uri.parse("package:$p"))
  fun uninstall(p:String)=intent(Intent.ACTION_DELETE,Uri.parse("package:$p"))
