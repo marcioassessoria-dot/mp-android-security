@@ -1,16 +1,106 @@
 package br.com.mp.androidsecurity.scanner
 
+import android.content.Context
+import br.com.mp.androidsecurity.BuildConfig
 import br.com.mp.androidsecurity.model.ScanResult
 import org.json.JSONArray
 import org.json.JSONObject
 import java.io.OutputStreamWriter
 import java.net.HttpURLConnection
 import java.net.URL
+import java.security.MessageDigest
+import java.util.UUID
 
-class PortalNexAiClient {
+class PortalNexAiClient(context: Context) {
     private val endpoint = "https://qblgoybdrkhfaskllokl.supabase.co/functions/v1/mp-security-ai"
+    private val identity = PortalNexDeviceIdentity(context.applicationContext)
 
     fun analyze(result: ScanResult): String {
+        val body = buildPayload(result)
+        if (!identity.isRegistered()) registerDevice()
+        return executeSigned(body, allowReRegister = true)
+    }
+
+    private fun registerDevice() {
+        val root = JSONObject().apply {
+            put("action", "register")
+            put("deviceId", identity.deviceId())
+            put("publicKey", identity.publicKeyBase64())
+            put("appVersion", BuildConfig.VERSION_NAME)
+        }
+        val response = openConnection()
+        try {
+            response.requestMethod = "POST"
+            response.doOutput = true
+            response.setRequestProperty("Content-Type", "application/json")
+            response.setRequestProperty("Accept", "application/json")
+            OutputStreamWriter(response.outputStream, Charsets.UTF_8).use { it.write(root.toString()) }
+            val code = response.responseCode
+            val body = readResponse(response)
+            if (code in 200..299 || code == 409) {
+                identity.markRegistered(true)
+                return
+            }
+            throw IllegalStateException("PortalNex autenticação HTTP $code: " + body.take(300))
+        } finally {
+            response.disconnect()
+        }
+    }
+
+    private fun executeSigned(body: String, allowReRegister: Boolean): String {
+        val timestamp = (System.currentTimeMillis() / 1000L).toString()
+        val nonce = UUID.randomUUID().toString()
+        val bodyHash = sha256Hex(body.toByteArray(Charsets.UTF_8))
+        val canonical = listOf(
+            "POST",
+            "/functions/v1/mp-security-ai",
+            timestamp,
+            nonce,
+            bodyHash
+        ).joinToString("\n")
+        val signature = identity.sign(canonical)
+
+        val connection = openConnection()
+        try {
+            connection.requestMethod = "POST"
+            connection.doOutput = true
+            connection.setRequestProperty("Content-Type", "application/json")
+            connection.setRequestProperty("Accept", "application/json")
+            connection.setRequestProperty("x-mp-device-id", identity.deviceId())
+            connection.setRequestProperty("x-mp-timestamp", timestamp)
+            connection.setRequestProperty("x-mp-nonce", nonce)
+            connection.setRequestProperty("x-mp-signature", signature)
+            OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { it.write(body) }
+
+            val code = connection.responseCode
+            val responseBody = readResponse(connection)
+            if (code in 200..299) {
+                identity.markRegistered(true)
+                return JSONObject(responseBody).optJSONObject("analysis")?.toString()
+                    ?: throw IllegalStateException("PortalNex IA não retornou uma análise.")
+            }
+
+            if (code == 401 && allowReRegister) {
+                identity.resetRegistration()
+                registerDevice()
+                return executeSigned(body, allowReRegister = false)
+            }
+
+            if (code == 429) {
+                val retry = runCatching { JSONObject(responseBody).optInt("retryAfter", 0) }.getOrDefault(0)
+                throw IllegalStateException(
+                    if (retry > 0) "Limite da IA por dispositivo atingido. Tente novamente em ${retry}s."
+                    else "Limite da IA por dispositivo atingido."
+                )
+            }
+
+            throw IllegalStateException("PortalNex IA HTTP $code: " + responseBody.take(300))
+        } finally {
+            connection.disconnect()
+        }
+    }
+
+    private fun buildPayload(result: ScanResult): String {
         val root = JSONObject()
         val d = result.diagnostics
         root.put("device", JSONObject().apply {
@@ -71,25 +161,26 @@ class PortalNexAiClient {
             })
         }
         root.put("apps", apps)
+        return root.toString()
+    }
 
-        val connection = (URL(endpoint).openConnection() as HttpURLConnection).apply {
-            requestMethod = "POST"
-            doOutput = true
+    private fun openConnection(): HttpURLConnection =
+        (URL(endpoint).openConnection() as HttpURLConnection).apply {
             connectTimeout = 15000
             readTimeout = 60000
-            setRequestProperty("Content-Type", "application/json")
-            setRequestProperty("Accept", "application/json")
+            setRequestProperty("Origin", "https://portalnex.app")
+            setRequestProperty("x-mp-app-id", "br.com.mp.androidsecurity")
+            setRequestProperty("x-mp-platform", "android")
+            setRequestProperty("x-mp-origin", "mp-android-security")
+            setRequestProperty("x-mp-app-version", BuildConfig.VERSION_NAME)
+            setRequestProperty("User-Agent", "MPAndroidSecurity/" + BuildConfig.VERSION_NAME)
         }
-        return try {
-            OutputStreamWriter(connection.outputStream, Charsets.UTF_8).use { it.write(root.toString()) }
-            val code = connection.responseCode
-            val body = (if (code >= 400) connection.errorStream else connection.inputStream)
-                ?.bufferedReader()?.use { it.readText() }.orEmpty()
-            if (code !in 200..299) throw IllegalStateException("PortalNex IA HTTP $code: "+body.take(300))
-            JSONObject(body).optJSONObject("analysis")?.toString()
-                ?: throw IllegalStateException("PortalNex IA não retornou uma análise.")
-        } finally {
-            connection.disconnect()
-        }
-    }
+
+    private fun readResponse(connection: HttpURLConnection): String =
+        (if (connection.responseCode >= 400) connection.errorStream else connection.inputStream)
+            ?.bufferedReader()?.use { it.readText() }.orEmpty()
+
+    private fun sha256Hex(bytes: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(bytes)
+            .joinToString("") { "%02x".format(it) }
 }
