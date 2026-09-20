@@ -10,8 +10,8 @@ android {
         applicationId = "br.com.mp.androidsecurity"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "1.0.4"
+        versionCode = 3
+        versionName = "1.0.5"
         buildConfigField("String", "METADEFENDER_API_KEY", "\"${System.getenv("METADEFENDER_API_KEY") ?: ""}\"")
     }
     compileOptions {
