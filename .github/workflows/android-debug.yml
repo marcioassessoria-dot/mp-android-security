@@ -54,6 +54,6 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v1.0.4"
-          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG"             --title "MP Android Security v1.0.4"             --notes "Correção do acesso às configurações de DNS privado e preparação da versão 1.0.4."
+          TAG="v1.0.5"
+          gh release view "$TAG" >/dev/null 2>&1 || gh release create "$TAG"             --title "MP Android Security v1.0.5"             --notes "Correção do acesso às configurações de DNS privado e preparação da versão 1.0.4."
           gh release upload "$TAG" app/build/outputs/apk/debug/app-debug.apk --clobber
