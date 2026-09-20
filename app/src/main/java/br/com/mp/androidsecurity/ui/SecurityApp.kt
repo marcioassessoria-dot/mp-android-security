@@ -49,7 +49,7 @@ Text("Correspondências de Threat Intelligence: ${r.threatMatchCount}");Text("Mo
   if(state.onlineScanningPackage!=null)Text("Analisando ${state.onlineScanningPackage} online...")
   state.onlineError?.let{Text(it,color=MaterialTheme.colorScheme.error,style=MaterialTheme.typography.bodySmall)}
   val results=state.onlineResults
-  Button(onClick={vm::scanOnlineAll},enabled=state.onlineScanningPackage==null,modifier=Modifier.fillMaxWidth()){Text(if(state.onlineScanningPackage!=null)"ESCANEANDO..." else "SCANEAR AGORA")}\n  Text("Apps analisados online: ${results.size}")
+  Button(onClick={vm.scanOnlineAll()},enabled=state.onlineScanningPackage==null,modifier=Modifier.fillMaxWidth()){Text(if(state.onlineScanningPackage!=null)"ESCANEANDO..." else "SCANEAR AGORA")}\n  Text("Apps analisados online: ${results.size}")
   results.values.toList().takeLast(5).forEach{res: br.com.mp.androidsecurity.scanner.OnlineScanResult ->
    Text("${res.verdict} • ${res.detected?.toString()?:"?"}/${res.totalEngines?.toString()?:"?"} engines",style=MaterialTheme.typography.titleMedium)
    Text(res.details,style=MaterialTheme.typography.bodySmall)
@@ -61,8 +61,8 @@ Text("Correspondências de Threat Intelligence: ${r.threatMatchCount}");Text("Mo
  val session=state.removalSession ?: return
  Card{Column(Modifier.padding(14.dp),verticalArrangement=Arrangement.spacedBy(7.dp)){
   Text("Remoção assistida",style=MaterialTheme.typography.titleLarge)
-  Text("Alvo: \${session.targetAppName}")
-  Text("Pacote: \${session.targetPackage}",style=MaterialTheme.typography.bodySmall)
+  Text("Alvo: ${session.targetAppName}")
+  Text("Pacote: ${session.targetPackage}",style=MaterialTheme.typography.bodySmall)
   Text("A sessão preserva a análise inicial para comparação com a nova análise.")
   if(session.after==null){
    Button(onClick={vm.markRemovalAction("REVISAR_CONFIGURACOES")},modifier=Modifier.fillMaxWidth()){Text("REGISTRAR REVISÃO")}
@@ -74,13 +74,13 @@ Text("Correspondências de Threat Intelligence: ${r.threatMatchCount}");Text("Mo
    val b=before.apps.find{it.packageName==session.targetPackage}
    val a=after.apps.find{it.packageName==session.targetPackage}
    Text("Comparação antes × depois",style=MaterialTheme.typography.titleMedium)
-   Text("Aplicativo alvo: \${if(a==null)"não encontrado após a análise" else "ainda instalado"}")
-   Text("Alto risco: \${before.highRiskCount} → \${after.highRiskCount}")
-   Text("Threat Intelligence: \${before.threatMatchCount} → \${after.threatMatchCount}")
-   Text("Adware: \${before.possibleAdwareCount} → \${after.possibleAdwareCount}")
-   Text("Risco do alvo: \${b?.riskScore?.toString()?:"—"} → \${a?.riskScore?.toString()?:"removido/não encontrado"}")
-   Text("Ações registradas: \${session.actions.size}")
-   session.actions.forEach{Text("• \${it.action} — \${DateFormat.format("dd/MM/yyyy HH:mm",it.timestamp)}",style=MaterialTheme.typography.bodySmall)}
+   Text("Aplicativo alvo: ${if(a==null)"não encontrado após a análise" else "ainda instalado"}")
+   Text("Alto risco: ${before.highRiskCount} → ${after.highRiskCount}")
+   Text("Threat Intelligence: ${before.threatMatchCount} → ${after.threatMatchCount}")
+   Text("Adware: ${before.possibleAdwareCount} → ${after.possibleAdwareCount}")
+   Text("Risco do alvo: ${b?.riskScore?.toString()?:"—"} → ${a?.riskScore?.toString()?:"removido/não encontrado"}")
+   Text("Ações registradas: ${session.actions.size}")
+   session.actions.forEach{Text("• ${it.action} — ${DateFormat.format("dd/MM/yyyy HH:mm",it.timestamp)}",style=MaterialTheme.typography.bodySmall)}
    Button(onClick=vm::clearRemovalSession,modifier=Modifier.fillMaxWidth()){Text("ENCERRAR SESSÃO")}
   }
   state.removalMessage?.let{Text(it,style=MaterialTheme.typography.bodySmall)}
