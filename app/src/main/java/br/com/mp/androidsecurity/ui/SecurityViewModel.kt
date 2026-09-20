@@ -31,7 +31,7 @@ class SecurityViewModel(a:Application):AndroidViewModel(a){
  val threatIntel:StateFlow<ThreatIntelState> = _threatIntel
  private val _state=MutableStateFlow(SecurityUiState());val state:StateFlow<SecurityUiState> = _state
  private val onlineScanner=MetaDefenderScanner(a)
- private val portalNexAi=PortalNexAiClient()
+ private val portalNexAi=PortalNexAiClient(a)
 
  init{ThreatIntelWorker.schedule(a);syncThreatIntel()}
 
