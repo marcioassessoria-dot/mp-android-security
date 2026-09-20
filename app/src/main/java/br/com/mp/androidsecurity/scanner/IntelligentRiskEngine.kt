@@ -39,7 +39,7 @@ object IntelligentRiskEngine {
     }
 
     private fun permissionComponent(app: InstalledAppInfo): Int =
-        if (app.requestedPermissions.isEmpty()) 0 else app.requestedPermissions.filter { it.granted }.sumOf { it.points }.coerceAtMost(100)
+        if (app.requestedPermissions.isEmpty()) 0 else app.requestedPermissions.filter { it.granted }.sumOf { it.riskPoints }.coerceAtMost(100)
 
     private fun onlineComponent(result: OnlineScanResult?): Int {
         if (result == null) return 0
