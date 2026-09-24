@@ -39,6 +39,6 @@ object CallRules {
     }
     private fun sameNumber(a:String,b:String):Boolean{if(a.isBlank()||b.isBlank())return false;if(a==b)return true;return a.length>=10&&b.length>=10&&a.takeLast(11)==b.takeLast(11)}
     fun addLog(context:Context,number:String,reason:String){val time=SimpleDateFormat("dd/MM/yyyy HH:mm",Locale.getDefault()).format(Date());val item="$time|${number.ifBlank{"Privado/Desconhecido"}}|$reason";val logs=prefs(context).getStringSet(LOGS,emptySet())?.toMutableSet() ?: mutableSetOf();logs.add(item);prefs(context).edit().putStringSet(LOGS,logs.sortedDescending().take(100).toSet()).apply()}
-    fun logs(context:Context):List<String> = prefs(context).getStringSet(LOGS,emptySet())?.sortedDescending() ?: emptyList()
+    fun logs(context:Context):List<String> = prefs(context).getStringSet(LOGS,emptySet())?.toList()?.sortedDescending() ?: emptyList()
     fun clearLogs(context:Context)=prefs(context).edit().remove(LOGS).apply()
 }
