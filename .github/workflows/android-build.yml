@@ -1,10 +1,9 @@
-name: Android Build
+name: MP Android Security - Complete APK
 
 on:
   push:
-    branches:
-      - '**'
-  pull_request:
+    branches: ["main"]
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -12,37 +11,38 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 20
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Set up JDK 17
+      - name: Java 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: '17'
+          java-version: "17"
 
-      - name: Set up Android SDK
-        uses: android-actions/setup-android@v3
-        with:
-          packages: 'platform-tools platforms;android-35 build-tools;35.0.0'
+      - name: Android SDK
+        uses: android-actions/setup-android@v4
 
-      - name: Install Android SDK packages
-        run: |
-          yes | sdkmanager --licenses >/dev/null || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
+      - name: SDK packages
+        run: sdkmanager --install "platform-tools" "platforms;android-35" "build-tools;35.0.0"
 
-      - name: Set up Gradle
+      - name: Gradle
         uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: "8.10.2"
 
-      - name: Build debug APK
+      - name: Build complete APK
         env:
           METADEFENDER_API_KEY: ${{ secrets.METADEFENDER_API_KEY }}
-        run: gradle :app:assembleDebug --stacktrace
+        run: |
+          gradle :app:assembleDebug
+          test -s app/build/outputs/apk/debug/app-debug.apk
 
-      - name: Upload APK
+      - name: Upload complete APK
         uses: actions/upload-artifact@v4
         with:
-          name: mp-android-security-debug
-          path: app/build/outputs/apk/debug/*.apk
+          name: MP-Android-Security-complete-debug
+          path: app/build/outputs/apk/debug/app-debug.apk
           if-no-files-found: error
